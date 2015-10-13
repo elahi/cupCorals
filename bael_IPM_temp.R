@@ -1,6 +1,6 @@
 #################################################
 # Author: Robin Elahi
-# Date: 150830
+# Date: 151013
 
 # Temperature manipulation of IPM growth parameter
 # Figure 5
@@ -8,6 +8,7 @@
 
 library(fields) # need for image.plot
 library(ggplot2)
+library(dplyr)
 
 rm(list=ls(all=TRUE)) # removes all previous material from R's memory
 
@@ -76,30 +77,30 @@ grid1$const_slope <- rep(growthSlope, length = nrow(grid1))
 
 # PLOT PARAMETER VS TEMPERATURE FOR EACH EA
 pSlope <- ggplot(grid1, aes((Kelvin-273.15),
-	vec_slope, color = as.factor(Ea))) +
-	geom_point(alpha = 0.2, size = 2) + theme_bw() + 
-      xlab("Temperature (C)") + ylab("") + 
-      geom_smooth(se = FALSE) + 
-      theme(legend.justification = c(1,1), legend.position = c(1, 1)) +
-      guides(color = guide_legend(reverse=TRUE)) + 
-      scale_color_discrete(name = "Activation\nEnergy") +
-      theme(text = element_text(size = 18)) +
-      theme(legend.title = element_text(size = 12)) + 
-      theme(legend.text = element_text(size = 12))
+                            vec_slope, color = as.factor(Ea))) +
+  geom_point(alpha = 0.2, size = 2) + theme_bw() + 
+  xlab("Temperature (C)") + ylab("") + 
+  geom_smooth(se = FALSE) + 
+  theme(legend.justification = c(1,1), legend.position = c(1, 1)) +
+  guides(color = guide_legend(reverse=TRUE)) + 
+  scale_color_discrete(name = "Activation\nEnergy") +
+  theme(text = element_text(size = 18)) +
+  theme(legend.title = element_text(size = 12)) + 
+  theme(legend.text = element_text(size = 12))
 
 # PLOT PARAMETER VS TEMPERATURE FOR EACH EA
 pInt <- ggplot(grid1, aes((Kelvin-273.15),
-	vec_int, color = as.factor(Ea))) +
-	geom_point(alpha = 0.2, size = 2) + theme_bw() + 
-      xlab("Temperature (C)") + ylab("") + 
-      geom_smooth(se = FALSE) + 
-      theme(legend.justification = c(1,1), legend.position = c(1, 1)) +
-      guides(color = guide_legend(reverse=TRUE)) + 
-      scale_color_discrete(name = "Activation\nEnergy") +
-      theme(text = element_text(size = 18)) +
-      theme(legend.title = element_text(size = 12)) + 
-      theme(legend.text = element_text(size = 12))
-      
+                          vec_int, color = as.factor(Ea))) +
+  geom_point(alpha = 0.2, size = 2) + theme_bw() + 
+  xlab("Temperature (C)") + ylab("") + 
+  geom_smooth(se = FALSE) + 
+  theme(legend.justification = c(1,1), legend.position = c(1, 1)) +
+  guides(color = guide_legend(reverse=TRUE)) + 
+  scale_color_discrete(name = "Activation\nEnergy") +
+  theme(text = element_text(size = 18)) +
+  theme(legend.title = element_text(size = 12)) + 
+  theme(legend.text = element_text(size = 12))
+
 pSlope + ylab("Growth Slope")
 pInt + ylab("Growth Intercept")
 
@@ -149,8 +150,8 @@ N <- length(AllReps); N
 ######################################
 
 # matrix
-mat1 <- matrix(nrow = N, ncol = 3)
-colnames(mat1) <- c("lambda", "maxSize95", "maxSize99")
+mat1 <- matrix(nrow = N, ncol = 4)
+colnames(mat1) <- c("lambda", "maxSize95", "maxSize99", "meanSize")
 mat1
 head(loopDat)
 params
@@ -162,22 +163,22 @@ for(g in 1:N){
   row.g <- AllReps[g]
   
   param.g <- data.frame(
-  	growth.int = loopDat$intGrowth[row.g], 
-  	growth.slope = loopDat$slopeGrowth[row.g], 
-  	growth.sd = params$growth.sd, 
-  	embryo.int = params$embryo.int, 
-  	embryo.slope = params$embryo.slope, 
-  	mature.size = - params$embryo.int/params$embryo.slope, 
-   	recruit.size.mean = params$recruit.size.mean, 
-  	recruit.size.sd = params$recruit.size.sd, 
-  	estab.prob.mean = params$estab.prob.mean, 
-  	surv.int = params$surv.int, 
-  	surv.slope = params$surv.slope)
-
-   	S <- s.x(y, params = param.g) 						# survival 	
-  	F <- h*outer(y, y, f.yx, params = param.g)  	# reproduction
-  	G <- h*outer(y, y, g.yx, params = param.g) 	# growth
-  	P <- G # placeholder; redefine P on the next line
+    growth.int = loopDat$intGrowth[row.g], 
+    growth.slope = loopDat$slopeGrowth[row.g], 
+    growth.sd = params$growth.sd, 
+    embryo.int = params$embryo.int, 
+    embryo.slope = params$embryo.slope, 
+    mature.size = - params$embryo.int/params$embryo.slope, 
+    recruit.size.mean = params$recruit.size.mean, 
+    recruit.size.sd = params$recruit.size.sd, 
+    estab.prob.mean = params$estab.prob.mean, 
+    surv.int = params$surv.int, 
+    surv.slope = params$surv.slope)
+  
+  S <- s.x(y, params = param.g) 						# survival 	
+  F <- h*outer(y, y, f.yx, params = param.g)  	# reproduction
+  G <- h*outer(y, y, g.yx, params = param.g) 	# growth
+  P <- G # placeholder; redefine P on the next line
   # fix eviction of offspring
   for(i in 1:(n/2)) {
     G[1,i] <- G[1,i] + 1-sum(G[,i])
@@ -197,8 +198,9 @@ for(g in 1:N){
   stable.dist <- w.eigen/sum(w.eigen)
   maxSize95 <- y[min(which(cumsum(stable.dist) > 0.95))] 
   maxSize99 <- y[min(which(cumsum(stable.dist) > 0.99))] 
-# population matrix with continuous variables
-  mat1[g,] <- c(lam, maxSize95, maxSize99)
+  meanSize <- sum(y*stable.dist)
+  # population matrix with continuous variables
+  mat1[g,] <- c(lam, maxSize95, maxSize99, meanSize)
 }
 
 head(mat1)
@@ -210,42 +212,111 @@ oneParam <- mat2
 head(oneParam)
 
 
-################################################
-################################################
+##########################################################
+# Plotting model results
+##########################################################
 label1 <- expression(paste("Maximum size (", cm^2, ")"))
 tempLab <- expression(paste("Temperature (", degree, "C)"))
-    
-regression <- geom_smooth(method = "lm", se = FALSE, alpha = 0.5, size = 0.4)
-ULClabel <- theme(plot.title = element_text(hjust = -0.07, vjust = 1, size = rel(1.5)))
+
+regression <- geom_smooth(method = "lm", se = FALSE, alpha = 0.5, 
+                          size = 0.4)
+ULClabel <- theme(plot.title = element_text(hjust = -0.07, vjust = 1, 
+                                            size = rel(1.5)))
 
 range(oneParam$maxSize99)
 
-####### ONE PANEL, MAX SIZE
-
 theme_set(theme_classic(base_size = 12))
 
-# Max size - master
-masterSize <- ggplot(data = oneParam,
-	aes((Kelvin-273.15), maxSize99, color = Ea)) +
-	xlab(tempLab) + ylab(label1) +
-	geom_point(alpha = 0.5, size = 0) + 
-    geom_smooth(se = FALSE, size = 0.7) + 
-    theme(legend.justification = c(1,1), legend.position = c(1.1, 1.1)) +
-    scale_color_discrete(name = "Activation\nenergy") + 
-    guides(color = guide_legend(reverse=TRUE)) + 
-	coord_cartesian(ylim = c(0.9, 1.75))
+# Max size 
+maxSizePlot <- ggplot(data = oneParam,
+                      aes((Kelvin-273.15), maxSize99, color = Ea)) +
+  xlab(tempLab) + ylab(label1) +
+  geom_point(alpha = 0.5, size = 0) + 
+  geom_smooth(se = FALSE, size = 0.7) + 
+  theme(legend.justification = c(1,1), legend.position = c(1.1, 1.1)) +
+  scale_color_discrete(name = "Activation\nenergy") + 
+  guides(color = guide_legend(reverse=TRUE)) + 
+  coord_cartesian(ylim = c(0.9, 1.75))
+maxSizePlot
 
-masterSize
 
-# Now add in observed and predicted points
-# Using empirical growth regression
+##########################################################
+# Get the observed max sizes
+##########################################################
+# Past: max of corals in 1969 or 1972
+# Present: max of corals in 2007 or 2010
 
-maxSizeObs <- data.frame(
-  era = c("Historic", "Modern"),
-  tempC = c(hisTemp-273.15, modTemp-273.15),
-  size = c(1.669, 1.004)
-)
-maxSizeObs
+names(hist0710)
+range(hist0710$area)
+
+dat <- read.csv("./data/bael_histoData.csv", header=TRUE, na.strings="NA")
+dim(dat)
+
+### Initial data
+ini.dat <- droplevels(dat[dat$ini.notes != "angle" & dat$ini.notes != "fuzzy" &
+                            dat$ini.notes != "gone" & dat$ini.notes != "nv" &
+                            dat$ini.notes != "tentacles", ])
+
+ini.dat <- droplevels(ini.dat[complete.cases(ini.dat$ini.area), ]) # drop NAs
+dim(ini.dat)
+
+### Final data
+unique(dat$fin.notes)
+
+fin.dat <- droplevels(dat[dat$fin.notes != "angle" & dat$fin.notes != "fuzzy" &
+                            dat$fin.notes != "gone" & dat$fin.notes != "nv" &
+                            dat$fin.notes != "tentacles" & dat$fin.notes != "algae" &
+                            dat$fin.notes != "dead" & dat$fin.notes != "overgrown", ])
+
+fin.dat <- droplevels(fin.dat[complete.cases(fin.dat$fin.area), ]) # drop NAs
+unique(fin.dat$fin.notes)
+
+dim(fin.dat)
+
+ini.sc<- subset(ini.dat, site=="SC")
+fin.sc <- subset(fin.dat, site == "SC")
+
+ini.sc$tempC <- with(ini.sc, ifelse(time == "past", hisTemp-273.15, modTemp-273.15))
+fin.sc$tempC <- with(fin.sc, ifelse(time == "past", hisTemp-273.15, modTemp-273.15))
+
+# Initial data
+ggplot(ini.sc, aes(tempC, ini.area)) +
+  geom_violin(alpha = I(0.5), aes(color = time), 
+              position = position_jitter(width = 0.01)) 
+
+# Final data
+ggplot(fin.sc, aes(tempC, fin.area)) +
+  geom_violin(alpha = I(0.5), aes(color = time), 
+              position = position_jitter(width = 0.01)) 
+
+initialSize <- ini.sc %>% group_by(time) %>%
+  summarise(meanSize = mean(ini.area), maxSize = max(ini.area))
+
+finalSize <- fin.sc %>% group_by(time) %>%
+  summarise(meanSize = mean(fin.area), maxSize = max(fin.area))
+
+initialSize
+finalSize
+
+
+
+
+allSizeObs <- geom_point(aes(tempC, meanSize), 
+                         data = ini.sc, 
+                         alpha = I(0.5), color = time, 
+                         position = position_jitter(width = 0.02)) 
+allSizeObs
+
+sizeObs <- ini.sc %>% group_by(time) %>%
+  summarise(meanSize = mean(ini.area), maxSize = max(ini.area))
+
+sizeObs$tempC <- c(hisTemp-273.15, modTemp-273.15)
+sizeObs
+
+##########################################################
+# Get the predicted mean and max sizes
+# Using the historical growth rate 
+##########################################################
 
 # what is the predicted size at the modern temp?
 modTemp
@@ -257,16 +328,32 @@ maxSizePred <- data.frame(
   size = c(1.358, maxSizeModPred)
 )
 
+
+
+##########################################################
+# Create ggplot objects
+##########################################################
+sizeObs
 # observed points
-pObs <- geom_point(aes(tempC, size), 
-                   data = maxSizeObs,
-                   size = 3, shape = 16, color = c("darkgray", 1))
+meanObs <- geom_point(aes(tempC, meanSize), 
+                      data = sizeObs,
+                      size = 3, shape = 16, color = c("darkgray", 1))
+
+maxObs <- geom_point(aes(tempC, maxSize), 
+                     data = sizeObs,
+                     size = 3, shape = 16, color = c("darkgray", 1))
 
 # predicted points 
 pPred <- geom_point(aes(tempC, size), 
-                   data = maxSizePred,
-                   size = 3, shape = 17, color = c("darkgray", 1))
+                    data = maxSizePred,
+                    size = 3, shape = 17, color = c("darkgray", 1))
 
-masterSize + pObs + pPred
+##########################################################
+# Create ggplot objects
+##########################################################
+
+meanSizePlot + meanObs + allSizeObs
+
+maxSizePlot + maxObs + allSizeObs
 
 ggsave("./figs/ipm_temp.pdf", width = 3.5, height = 3.5)
