@@ -122,9 +122,9 @@ min.size <- .9*min(c(growthDat$size,growthDat$sizeNext), na.rm=T)
 max.size <- 1.1*max(c(growthDat$size,growthDat$sizeNext), na.rm=T)
 
 min.size <- 0.02
-max.size <- 2
+max.size <- 2.02
 
-n <- 150 # number of cells in the matrix
+n <- 100 # number of cells in the matrix
 
 b <- min.size+c(0:n)*(max.size-min.size)/n # boundary points (edges of cells defining the matrix)
 b
@@ -246,13 +246,16 @@ maxSizePlot
 # Past: max of corals in 1969 or 1972
 # Present: max of corals in 2007 or 2010
 
+# Present size data already stored here, from ipmData.csv:
 names(hist0710)
 range(hist0710$area)
 
+# Past size data in histoData.csv:
 dat <- read.csv("./data/bael_histoData.csv", header=TRUE, na.strings="NA")
-dim(dat)
+head(dat)
 
 ### Initial data
+unique(dat$ini.notes)
 ini.dat <- droplevels(dat[dat$ini.notes != "angle" & dat$ini.notes != "fuzzy" &
                             dat$ini.notes != "gone" & dat$ini.notes != "nv" &
                             dat$ini.notes != "tentacles", ])
@@ -290,27 +293,19 @@ ggplot(fin.sc, aes(tempC, fin.area)) +
               position = position_jitter(width = 0.01)) 
 
 initialSize <- ini.sc %>% group_by(time) %>%
-  summarise(meanSize = mean(ini.area), maxSize = max(ini.area))
+  summarise(maxSize = max(ini.area))
 
 finalSize <- fin.sc %>% group_by(time) %>%
-  summarise(meanSize = mean(fin.area), maxSize = max(fin.area))
+  summarise(maxSize = max(fin.area))
 
 initialSize
 finalSize
 
-
-
-
-allSizeObs <- geom_point(aes(tempC, meanSize), 
-                         data = ini.sc, 
-                         alpha = I(0.5), color = time, 
-                         position = position_jitter(width = 0.02)) 
-allSizeObs
-
-sizeObs <- ini.sc %>% group_by(time) %>%
-  summarise(meanSize = mean(ini.area), maxSize = max(ini.area))
-
+sizeObs <- initialSize
 sizeObs$tempC <- c(hisTemp-273.15, modTemp-273.15)
+
+# substitute max size from largest observed size (to match past data)
+sizeObs$maxSize[2] <- max(hist0710$area)
 sizeObs
 
 ##########################################################
@@ -322,23 +317,22 @@ sizeObs
 modTemp
 maxSizeModPred <- oneParam[oneParam$Kelvin == modTemp &
                              oneParam$Ea == 0.6, ]$maxSize99
+
+# Create data frame with predicted size at modern temp (above)
+# and predicted size at historic temperature, using the empirical
+# growth function for past data
+
 maxSizePred <- data.frame(
   era = c("Historic", "Modern"),
   tempC = c(hisTemp-273.15, modTemp-273.15),
   size = c(1.358, maxSizeModPred)
 )
 
-
-
 ##########################################################
 # Create ggplot objects
 ##########################################################
 sizeObs
 # observed points
-meanObs <- geom_point(aes(tempC, meanSize), 
-                      data = sizeObs,
-                      size = 3, shape = 16, color = c("darkgray", 1))
-
 maxObs <- geom_point(aes(tempC, maxSize), 
                      data = sizeObs,
                      size = 3, shape = 16, color = c("darkgray", 1))
@@ -352,8 +346,6 @@ pPred <- geom_point(aes(tempC, size),
 # Create ggplot objects
 ##########################################################
 
-meanSizePlot + meanObs + allSizeObs
-
-maxSizePlot + maxObs + allSizeObs
+maxSizePlot + maxObs + pPred
 
 ggsave("./figs/ipm_temp.pdf", width = 3.5, height = 3.5)

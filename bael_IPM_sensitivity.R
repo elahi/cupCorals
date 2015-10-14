@@ -1,6 +1,6 @@
 #################################################
 # Author: Robin Elahi
-# Date: 150826
+# Date: 151013
 
 # Sensitivity analysis of base IPM
 # Figure 3
@@ -31,12 +31,11 @@ params
 parDFup <- read.csv("./data/parDFup.csv")
 
 ###1.4.4 Make a kernel###
-min.size <- .9*min(c(growthDat$size,growthDat$sizeNext), na.rm=T)
-max.size <- 1.1*max(c(growthDat$size,growthDat$sizeNext), na.rm=T)
+min.size <- 0.02
+max.size <- 1.5
 
-max.size <- 1.4
-
-n <- 100 # number of cells in the matrix
+binSize <- 0.02
+n <- (max.size - min.size)/binSize # number of cells in the matrix
 
 b <- min.size+c(0:n)*(max.size-min.size)/n # boundary points (edges of cells defining the matrix)
 b
@@ -185,7 +184,6 @@ plotDat
 
 dodge <- position_dodge(width = 0)
 
-
 theme_set(theme_classic(base_size = 12))
 plotDat$param
 
@@ -199,41 +197,21 @@ paramLabels <- c("Fecundity\n(intercept)", "Fecundity\n(slope)",
 
 ULClabel <- theme(plot.title = element_text(hjust = -0.15, vjust = 1, size = rel(1.2)))
 
-# mean size
-head(plotDat)
-plotMeanSize <- ggplot(plotDat[plotDat$variable == "Mean size", ], 
-                       aes(param, value)) +
-  geom_bar(stat = "identity", color = "black", fill = "darkgray") +
-  geom_hline(yintercept = 0, color = "gray", linetype = "dashed") + 
-  theme(legend.justification = c(1, 1), legend.position = c(0.95, 0.95)) +
-  # theme(panel.background = element_rect(color = 1, size = 1))	 +
-  scale_fill_discrete(name = "Perturbation") +
-  ylab("Percentage change") + xlab("Parameter") +
-  scale_x_discrete(limits = rev(paramOrder), labels = rev(paramLabels)) +
-  theme(strip.background = element_blank()) +
-  scale_y_continuous(limits = c(-5, 25)) + 
-  theme(axis.text.y = element_text(size = 8))
-
-plot1 <- plotMeanSize + labs(title = "A") + ULClabel + coord_flip()
-# maximum size
+##########################################################
+# Single plot, maximum size
+##########################################################
 head(plotDat)
 plotMaxSize <- ggplot(plotDat[plotDat$variable == "Maximum size", ], 
 	aes(param, value)) +
 	geom_bar(stat = "identity", color = "black", fill = "darkgray") +
 	geom_hline(yintercept = 0, color = "gray", linetype = "dashed") + 
 	theme(legend.justification = c(1, 1), legend.position = c(0.95, 0.95)) +
-	# theme(panel.background = element_rect(color = 1, size = 1))	 +
 	scale_fill_discrete(name = "Perturbation") +
 	ylab("Percentage change") + xlab("Parameter") +
 	scale_x_discrete(limits = rev(paramOrder), labels = rev(paramLabels)) +
 	theme(strip.background = element_blank()) +
-  scale_y_continuous(limits = c(-5, 25)) + 
+  scale_y_continuous(limits = c(-3, 33)) + 
   theme(axis.text.y = element_text(size = 8))
 	
-plot2 <- plotMaxSize + labs(title = "B") + ULClabel + coord_flip()
-##########################################################
-# Multi-panel plot
-##########################################################
-pdf("./figs/ipm_sensitivity.pdf", 3.5, 7)
-multiplot(plot1, plot2, cols = 1)
-dev.off()
+plotMaxSize + coord_flip()
+ggsave(file = "./figs/ipm_sensitivity.pdf", height = 3.5, width = 3.5)
