@@ -10,7 +10,7 @@ library(fields) # need for image.plot
 library(ggplot2)
 library(dplyr)
 
-rm(list=ls(all=TRUE)) # removes all previous material from R's memory
+# rm(list=ls(all=TRUE)) # removes all previous material from R's memory
 
 source("./R/baelParamsWA.R") 
 source("./R/metabolicTheory.R")
@@ -310,13 +310,22 @@ sizeObs
 
 ##########################################################
 # Get the predicted mean and max sizes
-# Using the historical growth rate 
+# Using the historical and modern growth slopes 
 ##########################################################
 
 # what is the predicted size at the modern temp?
 modTemp
 maxSizeModPred <- oneParam[oneParam$Kelvin == modTemp &
                              oneParam$Ea == 0.6, ]$maxSize99
+maxSizeModPred
+
+# what is the predicted size, using the IPM with the historical
+# growth slope?
+source("bael_IPM_historicGrowth.R")
+maxSizeHistPred <- res1$max99
+
+res0$max99 # should be the same as maxSizeModPred
+maxSizeModPred <- res0$max99
 
 # Create data frame with predicted size at modern temp (above)
 # and predicted size at historic temperature, using the empirical
@@ -325,7 +334,7 @@ maxSizeModPred <- oneParam[oneParam$Kelvin == modTemp &
 maxSizePred <- data.frame(
   era = c("Historic", "Modern"),
   tempC = c(hisTemp-273.15, modTemp-273.15),
-  size = c(1.358, maxSizeModPred)
+  size = c(maxSizeHistPred, maxSizeModPred)
 )
 
 ##########################################################
@@ -349,3 +358,20 @@ pPred <- geom_point(aes(tempC, size),
 maxSizePlot + maxObs + pPred
 
 ggsave("./figs/ipm_temp.pdf", width = 3.5, height = 3.5)
+
+##########################################
+# How different are these observed and predicted values?
+sizeObs
+maxSizeHistObs <- sizeObs$maxSize[1]
+maxSizeModObs <- sizeObs$maxSize[2]
+
+maxSizeHistObs  
+maxSizeModObs
+maxSizeHistPred  
+maxSizeModPred
+
+observedChange <- maxSizeHistObs - maxSizeModObs
+  
+##########################################
+
+
