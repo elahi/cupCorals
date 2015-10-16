@@ -12,7 +12,7 @@ theme_set(theme_classic(base_size = 16))
 library(AICcmodavg)
 library(dplyr)
 
-rm(list=ls(all=TRUE)) 
+# rm(list=ls(all=TRUE)) 
 
 dat <- read.csv("./data/bael_histoData.csv", header=TRUE, na.strings="NA")
 source("./R/graphicalParams.R")
@@ -68,19 +68,29 @@ ggplot(data = ini.dat, aes(site, ini.area, fill = time)) +
 ggplot(data = ini.dat, aes(site, ini.areaLN, fill = time)) + 
   geom_boxplot(notch = TRUE)  
 
-ggplot(ini.dat,  aes(x = ini.areaLN)) +
+ggplot(ini.dat,  aes(x = ini.area)) +
   geom_density(aes(color = time)) +
   facet_wrap(~ site, scales = "fixed", nrow = 4) + 
   xlab("Size (cm2)") + ylab("Probability density") +
   geom_vline(xintercept = 1)
 
-ggplot(ini.dat,  aes(x = ini.areaLN)) +
-  geom_histogram(binwidth = 0.1, aes(fill = time)) +
-  facet_wrap(~ site, scales = "fixed", nrow = 4) + 
-  xlab("Size (cm2)") + ylab("Count") +
-  geom_vline(xintercept = 1) + 
-  geom_density(aes(color = time))
+ggplot(scDat,  aes(x = time, y = ini.area)) +
+  geom_violin(aes(color = time)) +
+  facet_wrap(~ time, scales = "free_x")
 
+  facet_wrap(~ site, scales = "fixed", nrow = 4) + 
+  xlab("Size (cm2)") + ylab("Probability density") +
+  geom_vline(xintercept = 1)
+
+ggplot(scDat,  aes(x = time, y = ini.area)) +
+  geom_violin(aes(color = time)) + 
+  geom_boxplot(width = 0.2, notch = TRUE) + 
+  stat_summary(fun.y = mean, geom = "point", color = time, size = 2)
+
+head(ini.dat)
+ggplot(ini.dat,  aes(x = site, y = ini.area, fill = time)) +
+  geom_violin(position = position_dodge(1)) + 
+  geom_boxplot(width = 0.2, notch = TRUE)
 
 ##########################################################
 ##########################################################
@@ -254,4 +264,16 @@ ggplot(past,  aes(x = ini.area)) +
   facet_wrap(~ quad1, scales = "fixed", nrow = 4) + 
   xlab("Size (cm2)") + ylab("Count") +
   geom_vline(xintercept = 1)
+
+##########################################################
+# Density plots using ggplot2 for Shady Cove
+##########################################################
+head(scDat)
+
+ggplot(data = scDat, aes(x = ini.area, color = time)) + 
+  geom_density()
+
+ggplot(data = scDat, aes(x = time, y = ini.area, color = time)) + 
+  geom_violin()
+
 
