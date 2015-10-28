@@ -165,7 +165,6 @@ dev.off()
 lmerDat <- ini.dat # mean size
 lmerDat <- ini.dat[ini.dat$ini.area < 1, ]
 
-
 Cand.mod <- list()
 Cand.mod[[1]] <- lmer(ini.area ~ time +  (1|site) + (1|quad),
 							REML = FALSE, data = lmerDat)
@@ -250,12 +249,33 @@ ks.test(past$ini.areaLN, PG$ini.areaLN)
 ##########################################################
 # Plot past histos by quad1
 
-head(past)
+head(arrange(past, desc(ini.area)))
 
+head(past)
+head(present)
 
 ggplot(past,  aes(x = ini.area)) +
   geom_density(aes(color = time)) +
   facet_wrap(~ quad1, scales = "fixed", nrow = 4) + 
+  xlab("Size (cm2)") + ylab("Probability density") +
+  geom_vline(xintercept = 1)
+
+ggplot(past,  aes(x = ini.area)) +
+  geom_density(aes(fill = quad1), alpha = 0.5) +
+  facet_wrap(~ quad1, scales = "fixed", nrow = 4) + 
+  xlab("Size (cm2)") + ylab("Probability density") +
+  geom_vline(xintercept = 1)
+
+
+ggplot(ini.dat,  aes(x = ini.area)) +
+  geom_density(aes(fill = time), alpha = 0.5) +
+  facet_wrap(~ time + site, scales = "fixed", nrow = 4) + 
+  xlab("Size (cm2)") + ylab("Probability density") +
+  geom_vline(xintercept = 1)
+
+ggplot(scDat,  aes(x = ini.area)) +
+  geom_density(aes(fill = time), alpha = 0.5) +
+  # facet_wrap(~ time, scales = "fixed", nrow = 4) + 
   xlab("Size (cm2)") + ylab("Probability density") +
   geom_vline(xintercept = 1)
 

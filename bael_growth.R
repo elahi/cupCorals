@@ -52,17 +52,29 @@ datSCTrunc <- datSC[datSC$ini.area <= 0.96, ]
 # LMER; TEST SC DATA ONLY (TRUNCATED)
 ##########################################################
 ##########################################################
-
 lmerDat <- datSCTrunc
 dim(lmerDat)
 names(lmerDat)
 
 # SIZE: LINEAR
+# RANDOM EFFECTS
+mod1 <- lmer(fin.area ~ ini.area*time +  (1|quad), 
+             REML = TRUE, data=lmerDat)
+
+mod2 <- lmer(fin.area ~ ini.area*time +  (1|quadOriginal), 
+             REML = TRUE, data=lmerDat)
+
+AIC(mod1, mod2)
+anova(mod1, mod2)
+summary(mod2)
+
+
 # use varying slopes by quadrat? no - doesn't add anything
 mod1 <- lmer(fin.area ~ ini.area*time +  (ini.area|quad), 
                       REML = FALSE, data=lmerDat)
 summary(mod1)
-mod2 <- lmer(fin.area ~ ini.area*time + (1|quad), REML = FALSE, data=lmerDat)    
+mod2 <- lmer(fin.area ~ ini.area*time + (1|quad), 
+             REML = FALSE, data=lmerDat)    
 summary(mod2)
 AIC(mod1, mod2) # mod 1 is better; including 
 lm1 <- lm(fin.area ~ ini.area*time, data=lmerDat)
