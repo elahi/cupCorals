@@ -139,6 +139,10 @@ summary(presMod2)
 curve(plogis(0.5186 + 3.4766*x), ylim = c(0,1), lwd = 2, col = "darkgray")
 curve(plogis(1.7106 + 0.4489*x), lwd = 2, col = 1, add = TRUE)
 
+curve(plogis(0.5186 + 0.4489*x), ylim = c(0,1), lwd = 2, col = "red", add = TRUE)
+curve(plogis(1.7106 + 3.4766*x), ylim = c(0,1), lwd = 2, col = "blue", add = TRUE)
+
+
 ggplot(data.frame(x = c(0, 0.96)), aes(x)) + 
 	stat_function(fun = function(x)x^2, geom = "line")
 
