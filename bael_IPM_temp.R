@@ -1,7 +1,6 @@
 #################################################
 # Author: Robin Elahi
 # Date: 151207
-
 # Temperature manipulation of IPM 
 # Figure 5
 #################################################
@@ -11,6 +10,7 @@ rm(list=ls(all=TRUE)) # removes all previous material from R's memory
 ##### LOAD PACKAGES ETC #####
 library(fields) # need for image.plot
 library(ggplot2)
+theme_set(theme_classic(base_size = 12))
 library(dplyr)
 
 source("./R/baelParamsWA.R") 
@@ -60,13 +60,34 @@ survivalGrid <- modifyVitalRates(slope = params$surv.slope, slopeTempEffect = "n
                                originalTemp)
 head(survivalGrid)
 
-##### IPM SIMULATIONS #####
-masterGrid <- growthGrid[, 1:3]
+##### COLLATE VITAL RATES INTO FINAL DATAFRAME FOR IPMS #####
+simulationDF <- growthGrid %>% select(Kelvin:row) %>% 
+  rename(simulation = row)
 
-# for growth, I want a constant intercept, but variable slope
-masterGrid$intGrowth <- growthGrid$const_int
-masterGrid$slopeGrowth <- growthGrid$vec_slope
-head(masterGrid)
+# Growth: constant intercept, but variable slope
+growthDF <- cbind(simulationDF, growthGrid$const_int, growthGrid$vec_slope, 
+                  survivalGrid$const_int, survivalGrid$const_slope) 
+
+names(growthDF)[4:7] <- c("growth.int", "growth.slope", "surv.int", "surv.slope")
+growthDF$parameter <- "Growth"
+
+# Survival: constant intercept, but variable slope
+survDF <- cbind(simulationDF, growthGrid$const_int, growthGrid$const_slope, 
+                  survivalGrid$const_int, survivalGrid$vec_slope) 
+
+names(survDF)[4:7] <- c("growth.int", "growth.slope", "surv.int", "surv.slope")
+survDF$parameter <- "Survival"
+
+# Survival and Growth: variable slopes for both
+survGrowthDF <- cbind(simulationDF, growthGrid$const_int, growthGrid$vec_slope, 
+                survivalGrid$const_int, survivalGrid$vec_slope) 
+
+names(survGrowthDF)[4:7] <- c("growth.int", "growth.slope", "surv.int", "surv.slope")
+survGrowthDF$parameter <- "Survival and growth"
+
+# Combine all scenarios into one dataframe
+masterDF <- rbind(growthDF, survDF, survGrowthDF)
+masterDF$row <- seq(1:nrow(masterDF))
 
 ##### RUN IPMS AND EXTRACT POPULATION-LEVEL TRAITS #####
 ### ACCORDING TO VITAL RATES DEFINED ABOVE
@@ -87,38 +108,22 @@ y
 h <- y[2]-y[1] # step size (i.e., width of cells)
 h
 
-### Now calculate lambda and max size of the stable size distribution 
-# after running the ipm as a function of different temps
-head(grid1)
-# for loop
-loopDat <- masterGrid
-dim(loopDat)
+### Set up a for loop to run the IPM simulations
+loopDat <- masterDF
 AllReps <- unique(loopDat$row)
-AllReps
 N <- length(AllReps); N
 
-######################################
-######################################
-### CHANGE GROWTH SLOPE
-######################################
-######################################
-
-# matrix
+# Create a matrix to store the results
 mat1 <- matrix(nrow = N, ncol = 4)
 colnames(mat1) <- c("lambda", "maxSize95", "maxSize99", "meanSize")
-mat1
-head(loopDat)
-params
 
-loopDat$intEmbryo[1]/loopDat$slopeEmbryo[1]
-
-# Loop over each row in grid1; get lambda and maxSize
+# Loop over each row in masterDF
 for(g in 1:N){
   row.g <- AllReps[g]
   
   param.g <- data.frame(
-    growth.int = loopDat$intGrowth[row.g], 
-    growth.slope = loopDat$slopeGrowth[row.g], 
+    growth.int = loopDat$growth.int[row.g], 
+    growth.slope = loopDat$growth.slope[row.g], 
     growth.sd = params$growth.sd, 
     embryo.int = params$embryo.int, 
     embryo.slope = params$embryo.slope, 
@@ -126,8 +131,8 @@ for(g in 1:N){
     recruit.size.mean = params$recruit.size.mean, 
     recruit.size.sd = params$recruit.size.sd, 
     estab.prob.mean = params$estab.prob.mean, 
-    surv.int = params$surv.int, 
-    surv.slope = params$surv.slope)
+    surv.int = loopDat$surv.int[row.g], 
+    surv.slope = loopDat$surv.slope[row.g])
   
   S <- s.x(y, params = param.g) 						# survival 	
   F <- h*outer(y, y, f.yx, params = param.g)  	# reproduction
@@ -153,36 +158,32 @@ for(g in 1:N){
   maxSize95 <- y[min(which(cumsum(stable.dist) > 0.95))] 
   maxSize99 <- y[min(which(cumsum(stable.dist) > 0.99))] 
   meanSize <- sum(y*stable.dist)
-  # population matrix with continuous variables
+  # populate matrix with continuous variables
   mat1[g,] <- c(lam, maxSize95, maxSize99, meanSize)
 }
 
 head(mat1)
-mat2 <- cbind(masterGrid, mat1)
+mat2 <- cbind(masterDF, mat1)
 mat2$Ea <- as.factor(mat2$Ea)
 
-###RENAME DATAFRAME
-oneParam <- mat2
-head(oneParam)
+# Rename simulated dataframe
+simDat <- mat2
 
+##### PLOT SIMULATED DATA #####
 
-##########################################################
-# Plotting model results
-##########################################################
+# Plotting details
 label1 <- expression(paste("Maximum size (", cm^2, ")"))
+
 tempLab <- expression(paste("Temperature (", degree, "C)"))
 
 regression <- geom_smooth(method = "lm", se = FALSE, alpha = 0.5, 
                           size = 0.4)
+
 ULClabel <- theme(plot.title = element_text(hjust = -0.07, vjust = 1, 
                                             size = rel(1.5)))
 
-range(oneParam$maxSize99)
-
-theme_set(theme_classic(base_size = 12))
-
-# Max size 
-maxSizePlot <- ggplot(data = oneParam,
+# Max size plot
+maxSizePlot <- ggplot(data = simDat,
                       aes((Kelvin-273.15), maxSize99, color = Ea)) +
   xlab(tempLab) + ylab(label1) +
   geom_point(alpha = 0.5, size = 0) + 
@@ -190,13 +191,11 @@ maxSizePlot <- ggplot(data = oneParam,
   theme(legend.justification = c(1,1), legend.position = c(1.1, 1.1)) +
   scale_color_discrete(name = "Activation\nenergy") + 
   guides(color = guide_legend(reverse=TRUE)) + 
-  coord_cartesian(ylim = c(0.9, 1.75))
+  coord_cartesian(ylim = c(0.9, 1.75)) + 
+  facet_wrap(~ parameter)
 maxSizePlot
 
-
-##########################################################
-# Get the observed max sizes
-##########################################################
+##### GET OBSERVED MAX SIZES #####
 # Past: max of corals in 1969 or 1972
 # Present: max of corals in 2007 or 2010
 
@@ -262,15 +261,15 @@ sizeObs$tempC <- c(hisTemp-273.15, modTemp-273.15)
 sizeObs$maxSize[2] <- max(hist0710$area)
 sizeObs
 
-##########################################################
-# Get the predicted mean and max sizes
-# Using the historical and modern growth slopes 
-##########################################################
+##### GET PREDICTED MAX SIZES  #####
+# Empirical historical and modern growth and survival functions 
+
+# Predicted modern size (empirical growth and survival functions)
 
 # what is the predicted size at the modern temp?
 modTemp
-maxSizeModPred <- oneParam[oneParam$Kelvin == modTemp &
-                             oneParam$Ea == 0.6, ]$maxSize99
+maxSizeModPred <- simDat[simDat$Kelvin == modTemp &
+                             simDat$Ea == 0.6, ]$maxSize99
 maxSizeModPred
 
 # what is the predicted size, using the IPM with the historical
@@ -291,10 +290,8 @@ maxSizePred <- data.frame(
   size = c(maxSizeHistPred, maxSizeModPred)
 )
 
-##########################################################
-# Create ggplot objects
-##########################################################
-sizeObs
+##### FINAL PLOTS  #####
+
 # observed points
 maxObs <- geom_point(aes(tempC, maxSize), 
                      data = sizeObs,
@@ -305,15 +302,11 @@ pPred <- geom_point(aes(tempC, size),
                     data = maxSizePred,
                     size = 3, shape = 17, color = c("darkgray", 1))
 
-##########################################################
-# Create ggplot objects
-##########################################################
-
+# final plot
 maxSizePlot + maxObs + pPred
 
-ggsave("./figs/ipm_temp.pdf", width = 3.5, height = 3.5)
+ggsave("./figs/ipm_temp.pdf", width = 7, height = 3.5)
 
-##########################################
 # How different are these observed and predicted values?
 sizeObs
 maxSizeHistObs <- sizeObs$maxSize[1]
@@ -325,7 +318,3 @@ maxSizeHistPred
 maxSizeModPred
 
 observedChange <- maxSizeHistObs - maxSizeModObs
-  
-##########################################
-
-
