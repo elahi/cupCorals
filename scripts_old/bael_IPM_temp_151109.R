@@ -1,45 +1,82 @@
 #################################################
 # Author: Robin Elahi
-# Date: 151207
+# Date: 151013
 
-# Temperature manipulation of IPM 
+# Temperature manipulation of IPM growth parameter
 # Figure 5
 #################################################
 
-rm(list=ls(all=TRUE)) # removes all previous material from R's memory
-
-##### LOAD PACKAGES ETC #####
 library(fields) # need for image.plot
 library(ggplot2)
 library(dplyr)
 
+# rm(list=ls(all=TRUE)) # removes all previous material from R's memory
+
 source("./R/baelParamsWA.R") 
 source("./R/metabolicTheory.R")
 source("./R/multiplotF.R")
-source("./R/modify_vital_rates.R")
+params
 
 # Temperatures
 modTemp <- 9.25 + 273.15
 hisTemp <- 8.6 + 273.15
 
-#### SET GLOBAL PARAMETERS FOR THE SIMULATIONS #####
-### Range of activation energies; 0.2 - 1.2
-lowerEa <- 0.2; upperEa <- 1.2; Ea_increment <- 0.2
-### Range of temperatures; 8-9.5 degrees C
-lowerTemp <- 281.5; upperTemp <- 282.65; temp_increment <- 0.05;
-originalTemp <- modTemp
+################################################
+#### MODIFYING THE IPM
+#### GROWTH: INTERCEPT CONSTANT, SLOPE VARIABLE
+#### ACCORDING TO ARRHENIUS EQUATION
+################################################
+params
+growthSlope <- params$growth.slope
+growthInt <- params$growth.int
 
-##### MODIFYING VITAL RATES WITH THE ARRHENIUS EQUATION: GROWTH #####
+# SET UP VECTOR OF ACTIVATION ENERGIES
+vec_Ea <- seq(0.2, 1.2, by = 0.2) 
 
-growthGrid <- modifyVitalRates(slope = params$growth.slope, slopeTempEffect = "neg", 
-                               intercept = params$growth.int, interceptTempEffect = "pos", 
-                               lowerEa, upperEa, Ea_increment, 
-                               lowerTemp, upperTemp, temp_increment,
-                               originalTemp)
-head(growthGrid)
+# SET UP VECTOR OF TEMPERATURE
+# 0C = 273.15K
+# vec_temp <- seq(280.15, 288.15, by = 0.5) # 7 - 15 degrees C
 
-# sample plot of the slope as a function of temperature and Ea ####
-ggplot(grid1, aes((Kelvin-273.15),
+modTemp; hisTemp
+
+vec_temp <- seq(281.5, 282.65, by = 0.05) # 8-9.5 degrees C
+
+# EXPAND THE EaDF BY TEMP GRID
+grid1 <- expand.grid(vec_temp, vec_Ea)
+head(grid1)
+names(grid1) <- c("Kelvin", "Ea")
+dim(grid1)
+grid1$row <- seq(from = 1, to = dim(grid1)[1], by = 1)
+dim(grid1)
+summary(grid1)
+
+# Mean temperature for modern corals
+
+# Get pre-expontial coefficient, a, for each Ea FOR INTERCEPT
+grid1$intA <- aCoef(growthInt, E = grid1$Ea, k, temp = modTemp, dir = "pos")
+
+# Get pre-expontial coefficient, a, for each Ea FOR SLOPE
+grid1$slopeA <- aCoef(growthSlope, E = grid1$Ea, k, temp = modTemp, dir = "neg")
+
+head(grid1)
+
+# Calculate intercept for each temperature, assuming E = 0.65
+# Here we assume that the intercept will increase with temperature
+# ie, corals grow faster at warmer temps
+
+# Calculate intercepts as a function of temp and Ea
+grid1$vec_int <- ArrF(coef_a = grid1$intA, E = grid1$Ea, k, temp = grid1$Kelvin, dir = "pos")
+
+# Calculate slopes as a function of temp and Ea
+grid1$vec_slope <- ArrF(coef_a = grid1$slopeA, E = grid1$Ea, k, temp = grid1$Kelvin, dir = "neg")
+
+head(grid1)
+
+grid1$const_int <- rep(growthInt, length = nrow(grid1))
+grid1$const_slope <- rep(growthSlope, length = nrow(grid1))
+
+# PLOT PARAMETER VS TEMPERATURE FOR EACH EA
+pSlope <- ggplot(grid1, aes((Kelvin-273.15),
                             vec_slope, color = as.factor(Ea))) +
   geom_point(alpha = 0.2, size = 2) + theme_bw() + 
   xlab("Temperature (C)") + ylab("") + 
@@ -51,25 +88,34 @@ ggplot(grid1, aes((Kelvin-273.15),
   theme(legend.title = element_text(size = 12)) + 
   theme(legend.text = element_text(size = 12))
 
-##### MODIFYING VITAL RATES WITH THE ARRHENIUS EQUATION: SURVIVAL #####
+# PLOT PARAMETER VS TEMPERATURE FOR EACH EA
+pInt <- ggplot(grid1, aes((Kelvin-273.15),
+                          vec_int, color = as.factor(Ea))) +
+  geom_point(alpha = 0.2, size = 2) + theme_bw() + 
+  xlab("Temperature (C)") + ylab("") + 
+  geom_smooth(se = FALSE) + 
+  theme(legend.justification = c(1,1), legend.position = c(1, 1)) +
+  guides(color = guide_legend(reverse=TRUE)) + 
+  scale_color_discrete(name = "Activation\nEnergy") +
+  theme(text = element_text(size = 18)) +
+  theme(legend.title = element_text(size = 12)) + 
+  theme(legend.text = element_text(size = 12))
 
-survivalGrid <- modifyVitalRates(slope = params$surv.slope, slopeTempEffect = "neg", 
-                               intercept = params$surv.int, interceptTempEffect = "neg", 
-                               lowerEa, upperEa, Ea_increment, 
-                               lowerTemp, upperTemp, temp_increment,
-                               originalTemp)
-head(survivalGrid)
+pSlope + ylab("Growth Slope")
+pInt + ylab("Growth Intercept")
 
-##### IPM SIMULATIONS #####
-masterGrid <- growthGrid[, 1:3]
+masterGrid <- grid1[, 1:3]
 
 # for growth, I want a constant intercept, but variable slope
-masterGrid$intGrowth <- growthGrid$const_int
-masterGrid$slopeGrowth <- growthGrid$vec_slope
+masterGrid$intGrowth <- grid1$const_int
+masterGrid$slopeGrowth <- grid1$vec_slope
 head(masterGrid)
 
-##### RUN IPMS AND EXTRACT POPULATION-LEVEL TRAITS #####
-### ACCORDING TO VITAL RATES DEFINED ABOVE
+################################################
+#### MODIFYING THE IPM
+#### CALCULATE LAMBDA AND MAX SIZE
+#### ACCORDING TO GROWTH, SURV, EMBRYOS above
+################################################
 
 ###1.4.4 Make a kernel###
 min.size <- .9*min(c(growthDat$size,growthDat$sizeNext), na.rm=T)
@@ -87,8 +133,8 @@ y
 h <- y[2]-y[1] # step size (i.e., width of cells)
 h
 
-### Now calculate lambda and max size of the stable size distribution 
-# after running the ipm as a function of different temps
+### Now calculate lambda and max size of the stable size distribution after running the ipm
+# as a function of different temps
 head(grid1)
 # for loop
 loopDat <- masterGrid
