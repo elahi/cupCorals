@@ -1,6 +1,6 @@
 #################################################
 # Author: Robin Elahi
-# Date: 151208
+# Date: 151207
 # Temperature manipulation of IPM 
 # Figure 5
 #################################################
@@ -90,10 +90,6 @@ survGrowthDF$parameter <- "Survival and growth"
 masterDF <- rbind(growthDF, survDF, survGrowthDF)
 masterDF$row <- seq(1:nrow(masterDF))
 
-# Will only use growth slope scenario, 
-# because sensitivity analysis suggests only growth matters
-masterDF2 <- masterDF %>% filter(parameter == "Growth")
-
 ##### RUN IPMS AND EXTRACT POPULATION-LEVEL TRAITS #####
 ### ACCORDING TO VITAL RATES DEFINED ABOVE
 
@@ -114,7 +110,7 @@ h <- y[2]-y[1] # step size (i.e., width of cells)
 h
 
 ### Set up a for loop to run the IPM simulations
-loopDat <- masterDF2
+loopDat <- masterDF
 AllReps <- unique(loopDat$row)
 N <- length(AllReps); N
 
@@ -168,7 +164,7 @@ for(g in 1:N){
 }
 
 head(mat1)
-mat2 <- cbind(masterDF2, mat1)
+mat2 <- cbind(masterDF, mat1)
 mat2$Ea <- as.factor(mat2$Ea)
 
 # Rename simulated dataframe
@@ -188,15 +184,16 @@ ULClabel <- theme(plot.title = element_text(hjust = -0.07, vjust = 1,
                                             size = rel(1.5)))
 
 # Max size plot
-maxSizePlot <- ggplot(data = simDat, aes((Kelvin-273.15), maxSize99, color = Ea)) +
+maxSizePlot <- ggplot(data = simDat,
+                      aes((Kelvin-273.15), maxSize99, color = Ea)) +
   xlab(tempLab) + ylab(label1) +
   geom_point(alpha = 0.5, size = 0) + 
   geom_smooth(se = FALSE, size = 0.7) + 
   theme(legend.justification = c(1,1), legend.position = c(1.1, 1.1)) +
   scale_color_discrete(name = "Activation\nenergy") + 
-  # scale_color_continuous(name = "Activation\nenergy") + 
   guides(color = guide_legend(reverse=TRUE)) + 
-  coord_cartesian(ylim = c(0.9, 1.75)) 
+  coord_cartesian(ylim = c(0.9, 1.75)) + 
+  facet_wrap(~ parameter) 
 maxSizePlot
 
 ##### GET OBSERVED MAX SIZES #####
@@ -299,7 +296,7 @@ maxSizePred <- data.frame(
 # observed points
 maxObs <- geom_point(aes(tempC, maxSize), 
                      data = sizeObs,
-                     size = 3, shape = 15, color = c("darkgray", 1))
+                     size = 3, shape = 16, color = c("darkgray", 1))
 
 # predicted points 
 pPred <- geom_point(aes(tempC, size), 
@@ -309,7 +306,7 @@ pPred <- geom_point(aes(tempC, size),
 # final plot
 maxSizePlot + maxObs + pPred
 
-ggsave("./figs/ipm_temp.pdf", width = 3.5, height = 3.5)
+ggsave("./figs/ipm_temp.pdf", width = 7, height = 3.5)
 
 # How different are these observed and predicted values?
 sizeObs

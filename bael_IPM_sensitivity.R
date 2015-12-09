@@ -11,6 +11,8 @@ source("./R/baelParamsWA.R")
 source("./R/multiplotF.R") 
 source("./R/ipmFunctions.R")
 
+library(grid)
+
 # Upload dataframe of modified vital rates
 parDFup <- read.csv("./data/parDFup.csv")
 head(parDFup)
@@ -143,12 +145,22 @@ paramLabels <- c("Fecundity\n(intercept)", "Fecundity\n(slope)",
                  "Recruitment\nprobability", "Recruit size", "Survival\n(intercept)", 
                  "Survival\n(slope)", "Growth\n(intercept)", "Growth\n(slope)")
 
-##### SINGLE PLOT, MAXIMUM SIZE #####
 unique(plotDat$variable)
 
-ggplot(plotDat, aes(param, value)) +
+# Relevel factors of variable
+unique(plotDat$variable)
+plotDat$variable <- as.factor(plotDat$variable)
+print(levels(plotDat$variable))
+plotDat$variable <- with(plotDat, factor(variable, levels(variable)[c(1, 3, 2)]))
+
+##### MULTI-PANEL PLOT #####
+
+ULClabel <- theme(plot.title = element_text(hjust = -0.25, vjust = 1, size = rel(1.2)))
+
+sensitivityPlot <- ggplot(plotDat, aes(param, value)) +
   geom_bar(stat = "identity", color = "black", fill = "darkgray") +
-  geom_hline(yintercept = 0, color = "gray", linetype = "dashed") + 
+  geom_hline(yintercept = c(0, 10), color = "gray", linetype = "dashed") + 
+  # geom_hline(yintercept = 10, lty = 2, color = "darkgray") + 
   theme(legend.justification = c(1, 1), legend.position = c(0.95, 0.95)) +
   scale_fill_discrete(name = "Perturbation") +
   ylab("Percentage change") + xlab("Parameter") +
@@ -156,34 +168,12 @@ ggplot(plotDat, aes(param, value)) +
   theme(strip.background = element_blank()) +
   # scale_y_continuous(limits = c(-5, 35)) + 
   theme(axis.text.y = element_text(size = 8)) + 
-  facet_wrap(~ variable) + coord_flip()
+  facet_wrap(~ variable) + coord_flip() + 
+  # labs(title = "A") + ULClabel + 
+  theme(panel.margin = unit(1.5, "lines"))
 
-plotMeanSize <- ggplot(plotDat[plotDat$variable == "Mean size", ], 
-                      aes(param, value)) +
-  geom_bar(stat = "identity", color = "black", fill = "darkgray") +
-  geom_hline(yintercept = 0, color = "gray", linetype = "dashed") + 
-  theme(legend.justification = c(1, 1), legend.position = c(0.95, 0.95)) +
-  scale_fill_discrete(name = "Perturbation") +
-  ylab("Percentage change") + xlab("Parameter") +
-  scale_x_discrete(limits = rev(paramOrder), labels = rev(paramLabels)) +
-  theme(strip.background = element_blank()) +
-  # scale_y_continuous(limits = c(-5, 35)) + 
-  theme(axis.text.y = element_text(size = 8))
+sensitivityPlot
 
-plotMeanSize + coord_flip()
+ggsave(file = "./figs/ipm_sensitivity.pdf", height = 3.5, width = 7)
 
-plotMaxSize <- ggplot(plotDat[plotDat$variable == "Maximum size", ], 
-	aes(param, value)) +
-	geom_bar(stat = "identity", color = "black", fill = "darkgray") +
-	geom_hline(yintercept = 0, color = "gray", linetype = "dashed") + 
-	theme(legend.justification = c(1, 1), legend.position = c(0.95, 0.95)) +
-	scale_fill_discrete(name = "Perturbation") +
-	ylab("Percentage change") + xlab("Parameter") +
-	scale_x_discrete(limits = rev(paramOrder), labels = rev(paramLabels)) +
-	theme(strip.background = element_blank()) +
-  # scale_y_continuous(limits = c(-5, 35)) + 
-  theme(axis.text.y = element_text(size = 8))
-	
-plotMaxSize + coord_flip()
 
-# ggsave(file = "./figs/ipm_sensitivity.pdf", height = 3.5, width = 3.5)

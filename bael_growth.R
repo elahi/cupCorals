@@ -1,7 +1,6 @@
 #################################################
 # Author: Robin Elahi
-# Date: 150828
-
+# Date: 151208
 # Coral growth
 # Figure 4
 #################################################
@@ -192,3 +191,35 @@ sizePlot
 
 # Save lmerDat as different file
 dat_growth <- lmerDat
+
+
+
+##### FINAL FIGURE - GROWTH SCALING BY ERA #####
+ylab_growth <- expression(paste("Size at time t+3 (", cm^2, ")"))
+
+xlab_growth <- expression(paste("Size at time t (", cm^2, ")"))
+
+ULClabel <- theme(plot.title = element_text(hjust = -0.15, vjust = 1, size = rel(1.2)))
+
+size1 <- ggplot(dat_growth, aes(ini.area, fin.area, color = time, shape = time)) +
+  ylab(ylab_growth) + xlab(xlab_growth) + 
+  theme(legend.justification = c(0, 0), legend.position = c(0.5, 0)) +
+  theme(legend.title = element_blank()) + 
+  geom_point(size = 2.5, alpha = 0.6, 
+             position = position_jitter(h = 0.05)) +
+  scale_colour_manual(breaks = c("past", "present"), 
+                      values = c("darkgray", "black"), 
+                      labels = c("1969-1972", "2007-2010")) +
+  scale_shape_manual(breaks = c("past", "present"), 
+                     values = c(18, 20), 
+                     labels = c("1969-1972", "2007-2010")) 
+
+sizePlot <- size1 + 
+  geom_smooth(method = "lm", se = FALSE, size = 0.75) + 
+  # labs(title = "B") + ULClabel + 
+  geom_abline(a = 0, b = 1, linetype = 2, color = "black", size = 0.5) 
+
+sizePlot
+
+ggsave("./figs/growthPlot.pdf", height = 3.5, width = 3.5)
+
