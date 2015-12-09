@@ -12,6 +12,7 @@ library(fields) # need for image.plot
 library(ggplot2)
 theme_set(theme_classic(base_size = 12))
 library(dplyr)
+library(RColorBrewer)
 
 source("./R/baelParamsWA.R") 
 source("./R/ipmFunctions.R")
@@ -188,14 +189,15 @@ ULClabel <- theme(plot.title = element_text(hjust = -0.07, vjust = 1,
                                             size = rel(1.5)))
 
 # Max size plot
-maxSizePlot <- ggplot(data = simDat, aes((Kelvin-273.15), maxSize99, color = Ea)) +
+maxSizePlot <- ggplot(data = simDat, aes((Kelvin-273.15), maxSize99, linetype = Ea)) +
   xlab(tempLab) + ylab(label1) +
   geom_point(alpha = 0.5, size = 0) + 
-  geom_smooth(se = FALSE, size = 0.7) + 
+  geom_smooth(se = FALSE, size = 0.7, color = "black") + 
   theme(legend.justification = c(1,1), legend.position = c(1.1, 1.1)) +
-  scale_color_discrete(name = "Activation\nenergy") + 
-  # scale_color_continuous(name = "Activation\nenergy") + 
-  guides(color = guide_legend(reverse=TRUE)) + 
+  scale_linetype_discrete(name = "Activation\nenergy") + 
+  # scale_colour_grey(start = 0.8, end = 0.2) + 
+  guides(linetype = guide_legend(reverse=TRUE)) + 
+  # guides(color = guide_legend(reverse=TRUE)) + 
   coord_cartesian(ylim = c(0.9, 1.75)) 
 maxSizePlot
 
@@ -295,19 +297,26 @@ maxSizePred <- data.frame(
 )
 
 ##### FINAL PLOTS  #####
-
 # observed points
-maxObs <- geom_point(aes(tempC, maxSize), 
+maxObs <- geom_point(aes(tempC, maxSize, linetype = NULL), 
                      data = sizeObs,
-                     size = 3, shape = 15, color = c("darkgray", 1))
+                     size = 4, shape = 15, color = c("darkgray", 1)) 
+
+maxObs2 <- geom_point(aes(tempC, maxSize, linetype = NULL), 
+                     data = sizeObs,
+                     size = 2, shape = 15, color = "white") 
 
 # predicted points 
-pPred <- geom_point(aes(tempC, size), 
+pPred <- geom_point(aes(tempC, size, linetype = NULL), 
                     data = maxSizePred,
-                    size = 3, shape = 17, color = c("darkgray", 1))
+                    size = 4, shape = 17, color = c("darkgray", 1))
+
+pPred2 <- geom_point(aes(tempC, size, linetype = NULL), 
+                    data = maxSizePred,
+                    size = 2, shape = 17, color = "white")
 
 # final plot
-maxSizePlot + maxObs + pPred
+maxSizePlot + maxObs + maxObs2 + pPred + pPred2
 
 ggsave("./figs/ipm_temp.pdf", width = 3.5, height = 3.5)
 
