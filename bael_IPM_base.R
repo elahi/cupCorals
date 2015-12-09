@@ -1,21 +1,18 @@
 #################################################
 # Author: Robin Elahi
-# Date: 151013
-
+# Date: 151208
 # Base IPM parameterized by modern data
 # Figure 2
 #################################################
 
-rm(list=ls(all=TRUE)) # removes all previous material from R's memory
+rm(list=ls(all=TRUE)) 
+
+##### LOAD PACKAGES ETC #####
 source("./R/baelParamsWA.R")
 source("./R/baelParamsCA.R")
 source("./R/ipmFunctions.R")
-paramsWA
-paramsCA
 
-##########################################
-##########################################
-# MAX AND MIN SIZES
+##### MAX AND MIN SIZES #####
 names(hist0710)
 range(hist0710$area)
 
@@ -33,10 +30,8 @@ binSize <- 0.02
 binN <- (max.size - min.size)/binSize
 binN
 
-##########################################
-##########################################
-### RUN IPMS
-# Basic IPM, original parameters
+##### RUN IPMS #####
+### Base IPM, original parameters
 ipm1 <- bigmatrix(n = binN, params = paramsWA)
 res1 <- popF(ipm1, binSize)
 res1[1:8]
@@ -45,12 +40,12 @@ res1[1:8]
 plot(ipm1$meshpts, s.x(ipm1$meshpts, params), xlab = "Size", type = "l", ylab = "Survival probability", lwd = 12) # plot the survival model
 points(ipm1$meshpts, apply(ipm1$P, 2, sum), col = "red", lwd = 3, cex = 0.5, pch = 19) # plot the column sums of the survival/growth matrix
 
-# Basic IPM, modified embryo and recruitment parameters
+### Modified IPM, with modified embryo and recruitment parameters
 ipm2 <- bigmatrix(n = binN, params = paramsCA)
 res2 <- popF(ipm2, binSize)
 res2
 
-### Plot for publication
+##### PLOTTING #####
 pdf("./figs/ipm_histo_fit.pdf", 7, 3.5)
 set_graph_pars(ptype = "panel2")
 
@@ -92,3 +87,18 @@ legend("topright", leg.txt, lwd = 2, bty = "n",
 	cex = 1, text.col = c("black", "darkgray"))
 
 dev.off()
+
+##### INFORMAL TESTS OF IPM SENSITIVITY #####
+paramsWA
+res2[1:4] # results of the modified IPM using WA parameters
+ 
+paramsTest <- paramsWA; paramsTest$surv.slope = 0.5
+paramsTest <- paramsWA; paramsTest$surv.int = 3
+
+paramsTest <- paramsWA; paramsTest$growth.slope = 0.5
+paramsTest <- paramsWA; paramsTest$growth.int = 0.1
+
+ipmTest <- bigmatrix(n = binN, params = paramsTest)
+resTest <- popF(ipmTest, binSize)
+resTest[1:4]
+

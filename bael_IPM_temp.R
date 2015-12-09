@@ -14,6 +14,7 @@ theme_set(theme_classic(base_size = 12))
 library(dplyr)
 
 source("./R/baelParamsWA.R") 
+source("./R/ipmFunctions.R")
 source("./R/metabolicTheory.R")
 source("./R/multiplotF.R")
 source("./R/modify_vital_rates.R")
@@ -38,9 +39,18 @@ growthGrid <- modifyVitalRates(slope = params$growth.slope, slopeTempEffect = "n
                                originalTemp)
 head(growthGrid)
 
+##### MODIFYING VITAL RATES WITH THE ARRHENIUS EQUATION: SURVIVAL #####
+
+survivalGrid <- modifyVitalRates(slope = params$surv.slope, slopeTempEffect = "neg", 
+                               intercept = params$surv.int, interceptTempEffect = "neg", 
+                               lowerEa, upperEa, Ea_increment, 
+                               lowerTemp, upperTemp, temp_increment,
+                               originalTemp)
+head(survivalGrid)
+
 # sample plot of the slope as a function of temperature and Ea ####
-ggplot(grid1, aes((Kelvin-273.15),
-                            vec_slope, color = as.factor(Ea))) +
+ggplot(survivalGrid, aes((Kelvin-273.15),
+                  vec_slope, color = as.factor(Ea))) +
   geom_point(alpha = 0.2, size = 2) + theme_bw() + 
   xlab("Temperature (C)") + ylab("") + 
   geom_smooth(se = FALSE) + 
@@ -50,15 +60,6 @@ ggplot(grid1, aes((Kelvin-273.15),
   theme(text = element_text(size = 18)) +
   theme(legend.title = element_text(size = 12)) + 
   theme(legend.text = element_text(size = 12))
-
-##### MODIFYING VITAL RATES WITH THE ARRHENIUS EQUATION: SURVIVAL #####
-
-survivalGrid <- modifyVitalRates(slope = params$surv.slope, slopeTempEffect = "neg", 
-                               intercept = params$surv.int, interceptTempEffect = "neg", 
-                               lowerEa, upperEa, Ea_increment, 
-                               lowerTemp, upperTemp, temp_increment,
-                               originalTemp)
-head(survivalGrid)
 
 ##### COLLATE VITAL RATES INTO FINAL DATAFRAME FOR IPMS #####
 simulationDF <- growthGrid %>% select(Kelvin:row) %>% 

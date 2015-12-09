@@ -1,9 +1,10 @@
-# RE 150521
-#IPM functions, after Merow, Easterling
+#################################################
+# Author: Robin Elahi
+# Date: 151208
+# IPM functions, after Merow, Easterling
+#################################################
 
-##########################################
-##########################################
-###1.4.3 Define vital rate functions to describe life history
+##### DEFINE VITAL RATE FUNCTIONS #####
 # 1. survival probability function
 s.x <-function(x, params) {
   u = exp(params$surv.int + params$surv.slope*x)
@@ -25,9 +26,8 @@ f.yx <- function(xp, x, params) {
           sd = params$recruit.size.sd)
 }
 
-##########################################
-##########################################
-### Function to create the 'bigmatrix' of size n x n, with paramsX
+##### FUNCTION TO CREATE THE 'BIGMATRIX'  #####
+### 'bigmatrix' of size n x n, with paramsX ###
 bigmatrix <- function(n, params = paramsX) {
 b <- min.size+c(0:n)*(max.size-min.size)/n # boundary points (edges of cells defining the matrix)
 b
@@ -61,9 +61,7 @@ return(list(matrix = K, meshpts = y, P = P));
 
 }
 
-##########################################
-##########################################
-# FUNCTION TO GET RELEVANT POPULATION PARAMETERS
+##### FUNCTION TO GET RELEVANT POPULATION PARAMETERS #####
 popF <- function(bigmatrix, binSize) {
 	lam <- Re(eigen(bigmatrix$matrix)$values[1]) # dominant eigenvalue		
 	w.eigen <- Re(eigen(bigmatrix$matrix)$vectors[,1]) # right eigenvector
