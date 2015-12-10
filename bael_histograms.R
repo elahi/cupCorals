@@ -1,33 +1,26 @@
 #################################################
 # Author: Robin Elahi
-# Date: 150825
-
+# Date: 151209
 # Coral histograms for 1969 and 2007
 # Figure 1
 #################################################
 
+# rm(list=ls(all=TRUE)) 
+
+##### LOAD PACKAGES, DATA #####
 library(lme4)
 library(ggplot2)
 theme_set(theme_classic(base_size = 16))
 library(AICcmodavg)
 library(dplyr)
 
-# rm(list=ls(all=TRUE)) 
-
 dat <- read.csv("./data/bael_histoData.csv", header=TRUE, na.strings="NA")
 source("./R/graphicalParams.R")
-
-dat
-names(dat)
-summary(dat)
-dim(dat)
 
 dat$ini.areaLN <- log(dat$ini.area)
 dat$fin.areaLN <- log(dat$fin.area)
 
-##########################################################
-##########################################################
-### Data preparation
+##### DATA PREPARATION #####
 ### Remove everything unnecessary for histograms of initial data
 ini.dat <- droplevels(dat[dat$ini.notes != "angle" & dat$ini.notes != "fuzzy" &
                          dat$ini.notes != "gone" & dat$ini.notes != "nv" &
@@ -36,7 +29,6 @@ ini.dat <- droplevels(dat[dat$ini.notes != "angle" & dat$ini.notes != "fuzzy" &
 ini.dat <- droplevels(ini.dat[complete.cases(ini.dat$ini.area), ]) # drop NAs
 write.csv(ini.dat, "./output/ini.dat.csv")
 summary(ini.dat)
-dim(ini.dat)
 
 # Past data
 past <- ini.dat[ini.dat$time == "past", ]
@@ -61,42 +53,7 @@ quantile(SC$ini.area, c(0.95, 0.99))
 scDat <- subset(ini.dat, site == "SC")
 dim(scDat)
 
-# Quick boxplots
-head(ini.dat)
-ggplot(data = ini.dat, aes(site, ini.area, fill = time)) + 
-  geom_boxplot(notch = TRUE) 
-ggplot(data = ini.dat, aes(site, ini.areaLN, fill = time)) + 
-  geom_boxplot(notch = TRUE)  
-
-ggplot(ini.dat,  aes(x = ini.area)) +
-  geom_density(aes(color = time)) +
-  facet_wrap(~ site, scales = "fixed", nrow = 4) + 
-  xlab("Size (cm2)") + ylab("Probability density") +
-  geom_vline(xintercept = 1)
-
-ggplot(scDat,  aes(x = time, y = ini.area)) +
-  geom_violin(aes(color = time)) +
-  facet_wrap(~ time, scales = "free_x")
-
-  facet_wrap(~ site, scales = "fixed", nrow = 4) + 
-  xlab("Size (cm2)") + ylab("Probability density") +
-  geom_vline(xintercept = 1)
-
-ggplot(scDat,  aes(x = time, y = ini.area)) +
-  geom_violin(aes(color = time)) + 
-  geom_boxplot(width = 0.2, notch = TRUE) + 
-  stat_summary(fun.y = mean, geom = "point", color = time, size = 2)
-
-head(ini.dat)
-ggplot(ini.dat,  aes(x = site, y = ini.area, fill = time)) +
-  geom_violin(position = position_dodge(1)) + 
-  geom_boxplot(width = 0.2, notch = TRUE)
-
-##########################################################
-##########################################################
-# HISTOGRAMS - LINEAR
-##########################################################
-##########################################################
+##### 4-PANEL HISTOGRAM - LINEAR #####
 # retrieve proportions, rather than frequencies
 past.h <- hist(past$ini.area, breaks = seq(0, 1.8, 0.1))
 past.h$density <- past.h$counts/sum(past.h$counts)
@@ -110,9 +67,8 @@ PG.h$density <- PG.h$counts/sum(PG.h$counts)
 
 SC.h <- hist(SC$ini.area, breaks = seq(0, 1.8, 0.1))
 SC.h$density <- SC.h$counts/sum(SC.h$counts)
-#######################
-#######################
-#######################
+
+# final plot
 pdf("./figs/histo_4panel.pdf", 7, 7)
 set_graph_pars(ptype = "panel4")
 
@@ -155,51 +111,60 @@ mtext("Proportion", side = 2, line = -1, outer = TRUE, cex = 1.2)
 
 dev.off()
 
-##########################################################
-##########################################################
-# STATISTICAL TESTS
-##########################################################
-##########################################################
-# lme4
-# test whether size is differrent among eras
-lmerDat <- ini.dat # mean size
-lmerDat <- ini.dat[ini.dat$ini.area < 1, ]
+##### LMER BODY SIZE - FULL DATASET #####
+# test whether mean size is differrent among eras
+lmerDat <- ini.dat 
 
 Cand.mod <- list()
 Cand.mod[[1]] <- lmer(ini.area ~ time +  (1|site) + (1|quad),
 							REML = FALSE, data = lmerDat)
 Cand.mod[[2]] <- lmer(ini.area ~ 1 + (1|site) + (1|quad),
 							REML = FALSE, data = lmerDat)							
-							#generate AICc table with names
 
+#generate AICc table with names
 mod_text <- c("Era", "Null model")							
 mod.aicctab <- aictab(cand.set= Cand.mod, modnames= mod_text, 
                       sort=TRUE, second.ord=TRUE) # second.ord =TRUE means AICc is used 
 print(mod.aicctab, digits=2, LL=TRUE)
 #write.csv(mod.aicctab, "sizeFullAIC.csv")
-#write.csv(mod.aicctab, "sizeTruncAIC.csv")
-
-summary(Cand.mod[[1]])
 
 # check normality and homogeneity of variances
-lmerDat <- ini.dat # mean size
 bestMod <- lmer(ini.area ~ time + (1|site) +  (1|quad),
 							REML = TRUE, data=lmerDat)	
 
-lmerDatTrunc <- ini.dat[ini.dat$ini.area < 1, ]									
-bestModTrunc <- lmer(ini.area ~ time + (1|site) +  (1|quad),
-							REML = TRUE, data=lmerDatTrunc)	
-																	
 # check normality and homogeneity of variances
 par(mfrow = c(1,2))
-qqnorm(resid(bestMod))
-qqline(resid(bestMod))
+qqnorm(resid(bestMod)); qqline(resid(bestMod))
 plot(resid(bestMod) ~ fitted(bestMod)); abline(h=0)
 
-#######################
-#######################
-#######################
-### Supplemental figure - 4 panel
+##### LMER BODY SIZE - TRUNCATED DATASET #####
+# test whether mean size is differrent among eras
+lmerDatTrunc <- ini.dat[ini.dat$ini.area <= 1, ]
+
+Cand.mod <- list()
+Cand.mod[[1]] <- lmer(ini.area ~ time +  (1|site) + (1|quad),
+                      REML = FALSE, data = lmerDatTrunc)
+Cand.mod[[2]] <- lmer(ini.area ~ 1 + (1|site) + (1|quad),
+                      REML = FALSE, data = lmerDatTrunc)							
+
+#generate AICc table with names
+mod_text <- c("Era", "Null model")							
+mod.aicctab <- aictab(cand.set= Cand.mod, modnames= mod_text, 
+                      sort=TRUE, second.ord=TRUE) # second.ord =TRUE means AICc is used 
+print(mod.aicctab, digits=2, LL=TRUE)
+#write.csv(mod.aicctab, "sizeTruncAIC.csv")
+
+# check normality and homogeneity of variances
+bestModTrunc <- lmer(ini.area ~ time + (1|site) +  (1|quad),
+                REML = TRUE, data = lmerDatTrunc)	
+
+# check normality and homogeneity of variances
+par(mfrow = c(1,2))
+qqnorm(resid(bestModTrunc))
+qqline(resid(bestModTrunc))
+plot(resid(bestModTrunc) ~ fitted(bestModTrunc)); abline(h=0)
+
+##### SUPPLEMENTAL FIGURE - RESIDUALS OF GROWTH MODELS #####
 # plot residuals v fitted, and observe v fitted for supplemental
 
 pdf("./figs/histo_4panel_resids.pdf", 7, 7)
@@ -223,13 +188,8 @@ abline(0, 1, col = "darkgray", lty = 2, lwd = 2)
 add_panel_label(ltype = "d")
 
 dev.off()
-#######################
-#######################
-#######################
 
-##########################################################
-# K-S test for histos
-
+##### KOLMOGOROV-SMIRNOV TESTS OF SIZE-FREQUENCY DISTRIBUTIONS #####
 ks.test(past$ini.areaLN, SC$ini.areaLN)
 # data:  past$ini.area.cm2 and SC$ini.area.cm2
 # D = 0.29, p-value = 1.125e-06
@@ -245,12 +205,10 @@ ks.test(past$ini.areaLN, PG$ini.areaLN)
 # D = 0.40, p-value = 3.318e-13
 # alternative hypothesis: two-sided
 
-##########################################################
-##########################################################
+##### ADDITIONAL PLOTS FOR INSPECTION #####
 # Plot past histos by quad1
 
 head(arrange(past, desc(ini.area)))
-
 head(past)
 head(present)
 
@@ -265,7 +223,6 @@ ggplot(past,  aes(x = ini.area)) +
   facet_wrap(~ quad1, scales = "fixed", nrow = 4) + 
   xlab("Size (cm2)") + ylab("Probability density") +
   geom_vline(xintercept = 1)
-
 
 ggplot(ini.dat,  aes(x = ini.area)) +
   geom_density(aes(fill = time), alpha = 0.5) +
@@ -285,9 +242,7 @@ ggplot(past,  aes(x = ini.area)) +
   xlab("Size (cm2)") + ylab("Count") +
   geom_vline(xintercept = 1)
 
-##########################################################
-# Density plots using ggplot2 for Shady Cove
-##########################################################
+##### DENSITY PLOTS #####
 head(scDat)
 
 ggplot(data = scDat, aes(x = ini.area, color = time)) + 
