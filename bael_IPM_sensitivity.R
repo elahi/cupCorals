@@ -4,10 +4,12 @@
 # Sensitivity analysis of base IPM
 #################################################
 
-# rm(list=ls(all=TRUE))
+rm(list=ls(all=TRUE))
 
 ##### LOAD PACKAGES ETC #####
-source("./R/baelParamsWA.R") 
+source("./R/bael_params.R") 
+params <- paramsWA
+
 source("./R/multiplotF.R") 
 source("./R/ipmFunctions.R")
 

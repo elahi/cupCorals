@@ -8,19 +8,29 @@
 rm(list=ls(all=TRUE)) 
 
 ##### LOAD PACKAGES ETC #####
-source("./R/baelParamsWA.R")
-source("./R/baelParamsCA.R")
+source("./R/bael_params.R")
+# source("./R/baelParamsCA.R")
 source("./R/ipmFunctions.R")
 
-##### MAX AND MIN SIZES #####
-names(hist0710)
+# Data from ipmData.csv:
+dat <- read.csv("./data/bael_ipmData.csv", header=TRUE, na.strings="NA")
+# Select the relevant columns
+d <- dat[, which(names(dat) %in% 
+                   c("quad", "date", "date.no", "coral.id", "area", 
+                     "feret", "code", "sizeOK", "surv", "growth", "recruit"))]
+
+dHIST <- droplevels(d[d$code != "angle" & d$code != "algae" &
+                        d$code != "nv" & d$code != "dead", ])
+dHIST <- droplevels(dHIST[complete.cases(dHIST$area), ]) # drop NAs
+
+# include only 2007 and 2010: years for IPM
+hist07 <- droplevels(dHIST[dHIST$date.no == 39426, ])
+hist10 <- droplevels(dHIST[dHIST$date.no == 40515, ])
+hist0710 <- rbind(hist07, hist10)
 range(hist0710$area)
 
-min.size <- .9*min(hist0710$area, na.rm=T)
-max.size <- 1.1*max(hist0710$area, na.rm=T)
 
-min.size; max.size
-
+##### MAX AND MIN SIZES #####
 # Will use slightly larger size range for IPM because
 # it is otherwise artificially truncated
 min.size <- 0.02
@@ -48,6 +58,7 @@ res2
 ##### PLOTTING #####
 pdf("./figs/ipm_histo_fit.pdf", 7, 3.5)
 set_graph_pars(ptype = "panel2")
+xlab2 <- expression(paste("Size (", cm^2, ")"))
 
 # Panel A
 plot(mx.coral ~ areaR, data = ltDat, xlim = c(0, 1.4), ylim = c(-0.025, 40),

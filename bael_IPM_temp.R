@@ -14,7 +14,7 @@ theme_set(theme_classic(base_size = 12))
 library(dplyr)
 library(RColorBrewer)
 
-source("./R/baelParamsWA.R") 
+source("./R/bael_params.R") 
 source("./R/ipmFunctions.R")
 source("./R/metabolicTheory.R")
 source("./R/multiplotF.R")
@@ -25,8 +25,13 @@ modTemp <- 9.25 + 273.15
 hisTemp <- 8.6 + 273.15
 
 #### SET GLOBAL PARAMETERS FOR THE SIMULATIONS #####
+
+### Set IPM parameters for Washington population
+params <- paramsWA
+
 ### Range of activation energies; 0.2 - 1.2
 lowerEa <- 0.2; upperEa <- 1.2; Ea_increment <- 0.2
+
 ### Range of temperatures; 8-9.5 degrees C
 lowerTemp <- 281.5; upperTemp <- 282.65; temp_increment <- 0.05;
 originalTemp <- modTemp
@@ -201,30 +206,41 @@ maxSizePlot <- ggplot(data = simDat, aes((Kelvin-273.15), maxSize99, linetype = 
   coord_cartesian(ylim = c(0.9, 1.75)) 
 maxSizePlot
 
-##### GET OBSERVED MAX SIZES #####
-# Past: max of corals in 1969 or 1972
+##### OBSERVED MAXIMUM SIZE: PRESENT #####
 # Present: max of corals in 2007 or 2010
+# Data from ipmData.csv:
+dat <- read.csv("./data/bael_ipmData.csv", header=TRUE, na.strings="NA")
+# Select the relevant columns
+d <- dat[, which(names(dat) %in% 
+                   c("quad", "date", "date.no", "coral.id", "area", 
+                     "feret", "code", "sizeOK", "surv", "growth", "recruit"))]
 
-# Present size data already stored here, from ipmData.csv:
-names(hist0710)
+dHIST <- droplevels(d[d$code != "angle" & d$code != "algae" &
+                        d$code != "nv" & d$code != "dead", ])
+dHIST <- droplevels(dHIST[complete.cases(dHIST$area), ]) # drop NAs
+
+# include only 2007 and 2010: years for IPM
+hist07 <- droplevels(dHIST[dHIST$date.no == 39426, ])
+hist10 <- droplevels(dHIST[dHIST$date.no == 40515, ])
+hist0710 <- rbind(hist07, hist10)
 range(hist0710$area)
 
+##### OBSERVED MAXIMUM SIZE: PAST #####
+# Past: max of corals in 1969 or 1972
 # Past size data in histoData.csv:
 dat <- read.csv("./data/bael_histoData.csv", header=TRUE, na.strings="NA")
 head(dat)
 
-### Initial data
+# Initial data
 unique(dat$ini.notes)
 ini.dat <- droplevels(dat[dat$ini.notes != "angle" & dat$ini.notes != "fuzzy" &
                             dat$ini.notes != "gone" & dat$ini.notes != "nv" &
                             dat$ini.notes != "tentacles", ])
 
 ini.dat <- droplevels(ini.dat[complete.cases(ini.dat$ini.area), ]) # drop NAs
-dim(ini.dat)
 
-### Final data
+# Final data
 unique(dat$fin.notes)
-
 fin.dat <- droplevels(dat[dat$fin.notes != "angle" & dat$fin.notes != "fuzzy" &
                             dat$fin.notes != "gone" & dat$fin.notes != "nv" &
                             dat$fin.notes != "tentacles" & dat$fin.notes != "algae" &
@@ -232,8 +248,6 @@ fin.dat <- droplevels(dat[dat$fin.notes != "angle" & dat$fin.notes != "fuzzy" &
 
 fin.dat <- droplevels(fin.dat[complete.cases(fin.dat$fin.area), ]) # drop NAs
 unique(fin.dat$fin.notes)
-
-dim(fin.dat)
 
 ini.sc<- subset(ini.dat, site=="SC")
 fin.sc <- subset(fin.dat, site == "SC")
@@ -320,7 +334,7 @@ maxSizePlot + maxObs + maxObs2 + pPred + pPred2
 
 ggsave("./figs/ipm_temp.pdf", width = 3.5, height = 3.5)
 
-# How different are these observed and predicted values?
+### How different are these observed and predicted values?
 sizeObs
 maxSizeHistObs <- sizeObs$maxSize[1]
 maxSizeModObs <- sizeObs$maxSize[2]
@@ -331,3 +345,4 @@ maxSizeHistPred
 maxSizeModPred
 
 observedChange <- maxSizeHistObs - maxSizeModObs
+observedChange

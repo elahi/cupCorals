@@ -20,24 +20,28 @@ source("./R/graphicalParams.R")
 # 3. Establishment probability = # of living recruits/ # of total embryos
 
 ##### CALCULATE NUMBER OF EMBRYOS PRODUCED IN EACH QUADRAT #####
-# Use embryo function for washington
-dat$embryo.no <- embryoFwa(dat$area)
 
 # Calculate density for each quadrat and year
 density.q <- tapply(dat$area, list(dat$quad, dat$date.no), FUN=densityF)
 density.q
 
-### Calculate number of embryos for each quadrat and year
-embryo.q <- tapply(dat$embryo.no, list(dat$quad, dat$date.no), FUN=sum, na.rm=TRUE)
-colnames(embryo.q) <- c("2007", "2008", "2009", "2010")
+# Use embryo function for Washington and California
+dat$embryosWA <- embryoFwa(dat$area)
+dat$embryosCA <- embryoFca(dat$area)
+
+### Calculate number of embryos for each quadrat and year - WA
+embryoWA.q <- tapply(dat$embryosWA, list(dat$quad, dat$date.no), FUN=sum, na.rm=TRUE)
+colnames(embryoWA.q) <- c("2007", "2008", "2009", "2010")
 # remove the last column, because the embryo no. in 2010 is irrelevant
-eq <- embryo.q[,-4] 
-eqSum <- rowSums(eq)
-eqMult3 <- 3*eq[, 1] # 3 years worth of embryos
-eqMult2 <- 2*eq[, 1] # 2 years worth of embryos
-eqMult1 <- eq[, 1] # 1 years worth of embryos 2007
-plot(eqSum ~ eqMult3)
-abline(a = 0, b = 1, col = "red")
+eqWA <- embryoWA.q[,-4] 
+eqWASum <- rowSums(eqWA)
+
+### Calculate number of embryos for each quadrat and year - CA
+embryoCA.q <- tapply(dat$embryosCA, list(dat$quad, dat$date.no), FUN=sum, na.rm=TRUE)
+colnames(embryoCA.q) <- c("2007", "2008", "2009", "2010")
+# remove the last column, because the embryo no. in 2010 is irrelevant
+eqCA <- embryoCA.q[,-4] 
+eqCASum <- rowSums(eqCA)
 
 ##### CALCULATE NUMBER OF RECRUITS THAT SURVIVED TO TIME 3 (2010) #####
 names(dat)
@@ -70,11 +74,20 @@ recruit.qT3
 
 ##### CALCULATE ESTABLISHMENT PROBABILITY AFTER 3 YEARS IN 2010 #####
 # Sum the total number of embryos produced over three years
-eqSum
+eqCASum; eqWASum
 
-recProbSum <- (recruit.qT3/eqSum) * 100; 
+### For California (original)
+recProbSum <- (recruit.qT3/eqCASum) * 100; 
+recProb2 <- recProbSum
+recProb2[is.infinite(recProb2)] <- NaN
+recProbCA <- recProb2
+
+### For Washington (temperature-adjusted)
+recProbSum <- (recruit.qT3/eqWASum) * 100; 
 recProb2 <- recProbSum
 recProb2[is.infinite(recProb2)] <- NaN
 recProb2
+recProbWA <- recProb2
 
+plot(recProbWA ~ recProbCA)
 

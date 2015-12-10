@@ -56,15 +56,6 @@ params$growth.sd <- sd(resid(growthMod))
 
 params
 
-##### ESTABLISHMENT PROBABILITY #####
-source("./bael_establishment.R")
-
-# establishment probability - using the sum of three years of embryos
-params$estab.prob.mean <- mean(recProb2/100, na.rm = TRUE) 
-params$estab.prob.sd <- sd(recProb2/100, na.rm = TRUE)
-
-params
-
 ##### SIZE DISTRIBUTION OF RECRUITS #####
 dat <- read.csv("./data/bael_recruitSizeData.csv", header=TRUE, na.strings="NA")
 datPres <- dat[dat$time == "present", ]
@@ -81,13 +72,14 @@ params
 # which has colder seawater
 
 # The modified embryo-size function causes downstream changes to
-# size at maturity
+# size at maturity and establishment probability
 
 paramsWA <- params
 paramsCA <- params
 
 ##### EMBRYO FUNCTION #####
-# Note that the embryo function determines size at maturity
+# Note that the embryo function determines size at maturity and
+# establishment probability
 
 source("./bael_embryos.R")
 
@@ -111,6 +103,15 @@ paramsWA
 ##### SIZE AT MATURITY #####
 paramsCA$mature.size <- -paramsCA$embryo.int/paramsCA$embryo.slope
 paramsWA$mature.size <- -paramsWA$embryo.int/paramsCA$embryo.slope
+
+##### ESTABLISHMENT PROBABILITY #####
+source("./bael_establishment.R")
+
+paramsWA$estab.prob.mean <- mean(recProbWA/100, na.rm = TRUE) 
+paramsWA$estab.prob.sd <- sd(recProbWA/100, na.rm = TRUE)
+
+paramsCA$estab.prob.mean <- mean(recProbCA/100, na.rm = TRUE) 
+paramsCA$estab.prob.sd <- sd(recProbCA/100, na.rm = TRUE)
 
 ##### COMPLETE DATAFRAME #####
 paramsCA

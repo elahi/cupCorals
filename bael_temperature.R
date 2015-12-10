@@ -164,7 +164,7 @@ ULClabel <- theme(plot.title = element_text(hjust = -0.1, vjust = 1,
 ### Annual temperatures - time-series
 plot_temp_annual <- sc_yearly %>% filter(year > 1962 & year < 2010) %>%
   ggplot(data = ., aes(year, tempC)) + 
-  geom_point() + geom_smooth() + 
+  geom_point() + geom_smooth(color = "black") + 
   ylab(expression(paste("Annual temperature (", degree, "C)"))) + 
   xlab("") + 
   ULClabel + labs(title = "A")
