@@ -13,6 +13,7 @@ library(ggplot2)
 theme_set(theme_classic(base_size = 16))
 library(AICcmodavg)
 library(dplyr)
+library(lmerTest)
 
 dat <- read.csv("./data/bael_growthData.csv", header=TRUE, na.strings="NA")
 source("./R/graphicalParams.R")
@@ -64,6 +65,8 @@ print(mod.aicctab, digits=2, LL=TRUE)
 
 write.csv(mod.aicctab, "./output/growthAIC.csv")
 
+summary(Cand.mod[[1]])
+
 # Save lmerDat as different file
 dat_growth <- lmerDat
 
@@ -103,7 +106,7 @@ size1 <- ggplot(dat_growth, aes(ini.area, fin.area, color = time, shape = time))
 sizePlot <- size1 + 
   geom_smooth(method = "lm", se = FALSE, size = 0.75) + 
   # labs(title = "B") + ULClabel + 
-  geom_abline(a = 0, b = 1, linetype = 2, color = "black", size = 0.5) 
+  geom_abline(intercept = 0, slope = 1, linetype = 2, color = "black", size = 0.5) 
 
 sizePlot
 
