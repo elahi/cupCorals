@@ -18,20 +18,26 @@ source("bael_growth.R")
 
 # Summary of modeled parameters
 summary(pastMod)
+summary(pastModAll)
 summary(presMod)
 
 # Fitted coefficients of general linear model
 fixef(pastMod) 
+fixef(pastModAll) 
 
 # Create new paramsDF  
 paramsWA_hist <- paramsWA
+paramsWA_histAll <- paramsWA
 
 # Substitute growth slope from historical data
 paramsWA_hist$growth.slope <- fixef(pastMod)[2] 
+paramsWA_histAll$growth.slope <- fixef(pastModAll)[2] 
 
-# Create one more new DF that also has historical intercept
-paramsWA_hist2 <- paramsWA_hist
-paramsWA_hist2$growth.int <- fixef(pastMod)[1] 
+paramsWA_hist$growth.sd <- fixef(pastMod)[1] 
+paramsWA_histAll$growth.sd <- fixef(pastModAll)[1] 
+
+paramsWA_hist
+paramsWA_histAll
 
 ##### RUN IPMS #####
 
@@ -50,15 +56,19 @@ binN
 # Basic IPM, paramsWA
 ipm0 <- bigmatrix(n = binN, params = paramsWA)
 res0 <- popF(ipm0, binSize)
+res0$max99
 
-# Basic IPM, paramsWA_hist (historical growth slope)
+# Basic IPM, paramsWA_hist (historical growth slope, truncated)
 ipm1 <- bigmatrix(n = binN, params = paramsWA_hist)
 res1 <- popF(ipm1, binSize)
+res1$max99
+
+# Basic IPM, paramsWA_histAll (historical growth slope, all data)
+ipm2 <- bigmatrix(n = binN, params = paramsWA_histAll)
+res2 <- popF(ipm2, binSize)
+res2$max99
 
 # Check for eviction
-plot(ipm1$meshpts, s.x(ipm1$meshpts, params), xlab = "Size", type = "l", ylab = "Survival probability", lwd = 12) # plot the survival model
-points(ipm1$meshpts, apply(ipm1$P, 2, sum), col = "red", lwd = 3, cex = 0.5, pch = 19) # plot the column sums of the survival/growth matrix
+plot(ipm2$meshpts, s.x(ipm1$meshpts, params), xlab = "Size", type = "l", ylab = "Survival probability", lwd = 12) # plot the survival model
+points(ipm2$meshpts, apply(ipm1$P, 2, sum), col = "red", lwd = 3, cex = 0.5, pch = 19) # plot the column sums of the survival/growth matrix
 
-# Basic IPM, paramsWA_hist (historical growth slope and intercept)
-ipm2 <- bigmatrix(n = binN, params = paramsWA_hist2)
-res2 <- popF(ipm2, binSize)

@@ -104,8 +104,8 @@ masterDF2 <- masterDF %>% filter(parameter == "Growth")
 ### ACCORDING TO VITAL RATES DEFINED ABOVE
 
 ###1.4.4 Make a kernel###
-min.size <- .9*min(c(growthDat$size,growthDat$sizeNext), na.rm=T)
-max.size <- 1.1*max(c(growthDat$size,growthDat$sizeNext), na.rm=T)
+#min.size <- .9*min(c(growthDat$size,growthDat$sizeNext), na.rm=T)
+#max.size <- 1.1*max(c(growthDat$size,growthDat$sizeNext), na.rm=T)
 
 min.size <- 0.02
 max.size <- 2.02
@@ -184,26 +184,26 @@ simDat <- mat2
 
 # Plotting details
 label1 <- expression(paste("Maximum size (", cm^2, ")"))
-
 tempLab <- expression(paste("Temperature (", degree, "C)"))
-
 regression <- geom_smooth(method = "lm", se = FALSE, alpha = 0.5, 
                           size = 0.4)
-
 ULClabel <- theme(plot.title = element_text(hjust = -0.07, vjust = 1, 
                                             size = rel(1.5)))
+theme_set(theme_classic(base_size = 12))
 
 # Max size plot
 maxSizePlot <- ggplot(data = simDat, aes((Kelvin-273.15), maxSize99, linetype = Ea)) +
   xlab(tempLab) + ylab(label1) +
-  geom_point(alpha = 0.5, size = 0) + 
+  geom_point(alpha = 0.5, size = 0, color = "white") + 
   geom_smooth(se = FALSE, size = 0.7, color = "black") + 
-  theme(legend.justification = c(1,1), legend.position = c(1.1, 1.1)) +
+  theme(legend.justification = "center", legend.position = c(0.9, 0.7)) +
+  theme(legend.text = element_text(size = 10)) + 
+  theme(legend.title = element_text(size = 10)) + 
   scale_linetype_discrete(name = "Activation\nenergy") + 
   # scale_colour_grey(start = 0.8, end = 0.2) + 
   guides(linetype = guide_legend(reverse=TRUE)) + 
   # guides(color = guide_legend(reverse=TRUE)) + 
-  coord_cartesian(ylim = c(0.9, 1.75)) 
+  coord_cartesian(ylim = c(0.9, 1.7)) 
 maxSizePlot
 
 ##### OBSERVED MAXIMUM SIZE: PRESENT #####
@@ -224,6 +224,7 @@ hist07 <- droplevels(dHIST[dHIST$date.no == 39426, ])
 hist10 <- droplevels(dHIST[dHIST$date.no == 40515, ])
 hist0710 <- rbind(hist07, hist10)
 range(hist0710$area)
+quantile(hist0710$area, c(0.95, 0.99))
 
 ##### OBSERVED MAXIMUM SIZE: PAST #####
 # Past: max of corals in 1969 or 1972
@@ -266,10 +267,14 @@ ggplot(fin.sc, aes(tempC, fin.area)) +
               position = position_jitter(width = 0.01)) 
 
 initialSize <- ini.sc %>% group_by(time) %>%
-  summarise(maxSize = max(ini.area))
+  summarise(maxSize = max(ini.area), 
+            max99 = quantile(ini.area, 0.99), 
+            max95 = quantile(ini.area, 0.95))
 
 finalSize <- fin.sc %>% group_by(time) %>%
-  summarise(maxSize = max(fin.area))
+  summarise(maxSize = max(fin.area), 
+            max99 = quantile(fin.area, 0.99), 
+            max95 = quantile(fin.area, 0.95))
 
 initialSize
 finalSize
@@ -278,8 +283,17 @@ sizeObs <- initialSize
 sizeObs$tempC <- c(hisTemp-273.15, modTemp-273.15)
 
 # substitute max size from largest observed size (to match past data)
-sizeObs$maxSize[2] <- max(hist0710$area)
-sizeObs
+range(hist0710$area)
+quantile(hist0710$area, c(0.95, 0.99))
+
+present_hist0710 <- data.frame(time = "present0710", 
+                                  maxSize = max(hist0710$area), 
+                                  max99 = quantile(hist0710$area, 0.99), 
+                                  max95 = quantile(hist0710$area, 0.95), 
+                                  tempC = 9.25)
+present_hist0710
+
+sizeObs <- rbind(sizeObs, present_hist0710)
 
 ##### GET PREDICTED MAX SIZES  #####
 # Empirical historical and modern growth and survival functions 
@@ -295,10 +309,17 @@ maxSizeModPred
 # what is the predicted size, using the IPM with the historical
 # growth slope?
 source("bael_IPM_historicGrowth.R")
-maxSizeHistPred <- res1$max99
 
 res0$max99 # should be the same as maxSizeModPred
 maxSizeModPred <- res0$max99
+
+# truncated growth curve (historic data)
+res1$max99
+# full growth curve (historic data)
+res2$max99
+
+# use truncated growth curve
+maxSizeHistPred <- res2$max99
 
 # Create data frame with predicted size at modern temp (above)
 # and predicted size at historic temperature, using the empirical
@@ -310,29 +331,50 @@ maxSizePred <- data.frame(
   size = c(maxSizeHistPred, maxSizeModPred)
 )
 
+maxSizePred
+
 ##### FINAL PLOTS  #####
 # observed points
-maxObs <- geom_point(aes(tempC, maxSize, linetype = NULL), 
+sizeObs <- sizeObs %>% filter(time != "present")
+maxObs <- geom_point(aes(tempC, max99, linetype = NULL), 
                      data = sizeObs,
-                     size = 4, shape = 15, color = c("darkgray", 1)) 
+                     size = 3, shape = 15, color = c("darkgray", 1)) 
 
-maxObs2 <- geom_point(aes(tempC, maxSize, linetype = NULL), 
+maxObs2 <- geom_point(aes(tempC, max99, linetype = NULL), 
                      data = sizeObs,
-                     size = 2, shape = 15, color = "white") 
+                     size = 1, shape = 15, color = "white") 
 
 # predicted points 
 pPred <- geom_point(aes(tempC, size, linetype = NULL), 
                     data = maxSizePred,
-                    size = 4, shape = 17, color = c("darkgray", 1))
+                    size = 3, shape = 17, color = c("darkgray", 1))
 
 pPred2 <- geom_point(aes(tempC, size, linetype = NULL), 
                     data = maxSizePred,
-                    size = 2, shape = 17, color = "white")
+                    size = 1, shape = 17, color = "white")
 
 # final plot
 maxSizePlot + maxObs + maxObs2 + pPred + pPred2
 
 ggsave("./figs/ipm_temp.pdf", width = 3.5, height = 3.5)
+
+
+##### PLOT USING 99%ILE OBSERVED SIZE  #####
+
+sizeObs
+library(tidyr)
+
+sizeObsLong <- gather(sizeObs, key = sizeType, value = size_cm, maxSize:max95)
+
+sizeObsLong <- sizeObsLong %>% filter(sizeType == "max99") %>%
+  filter(time != "present")
+sizeObsLong
+
+obsPoints <- geom_point(aes(tempC, size_cm, by = sizeType, linetype = NULL), 
+                    data = sizeObsLong)
+maxSizePred
+
+maxSizePlot + pPred + pPred2 + obsPoints
 
 ### How different are these observed and predicted values?
 sizeObs

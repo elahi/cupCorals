@@ -10,10 +10,10 @@
 ##### LOAD PACKAGES, DATA #####
 library(lme4)
 library(ggplot2)
-theme_set(theme_classic(base_size = 16))
+theme_set(theme_classic(base_size = 12))
 library(AICcmodavg)
 library(dplyr)
-library(lmerTest)
+# library(lmerTest)
 
 dat <- read.csv("./data/bael_growthData.csv", header=TRUE, na.strings="NA")
 source("./R/graphicalParams.R")
@@ -21,6 +21,9 @@ dat$ini.areaLN <- log(dat$ini.area)
 dat$fin.areaLN <- log(dat$fin.area)
 
 datSC <- dat
+
+datSC %>% filter(delta < -0.1) # check coral B24 in photograph
+
 # Create dataset for SC present
 datSCpresent <- datSC[datSC$time == "present", ]
 # Create dataset for SC past
@@ -30,14 +33,15 @@ datSCpast <- datSC[datSC$time == "past", ]
 set_graph_pars(ptype = "panel1")
 plot(fin.area ~ ini.area, data = datSCpast)
 points(fin.area ~ ini.area, data = datSCpresent, col = "red")
-abline(v = 1.0, col = "black", lty = 3)
+abline(v = 0.95, col = "black", lty = 3)
 abline(a = 0, b = 1, col = "darkgray", lty = 2, lwd = 2)
 
-datSCTrunc <- datSC[datSC$ini.area <= 1.0, ]
+datSCTrunc <- datSC[datSC$ini.area <= 0.95, ]
 
 ##### USE LMER TO TEST THE EFFECT OF ERA ON CORAL GROWTH #####
 ### Use truncated historical dataset to match observed size range in modern dataset
 lmerDat <- datSCTrunc
+lmerDat <- datSC
 
 # Random effects are quadrat (original quadrats for historical study, not subquads)
 # Don't need varying slopes by quadrat 
@@ -71,7 +75,7 @@ summary(Cand.mod[[1]])
 dat_growth <- lmerDat
 
 ##### GET MODEL PARAMETERS BY ERA #####
-datSCpastTrunc <- datSCpast[datSCpast$ini.area <= 1.0, ]
+datSCpastTrunc <- datSCpast[datSCpast$ini.area <= 0.95, ]
 
 presMod <- lmer(fin.area ~ ini.area + (1|quad), 
                       REML = FALSE, data = datSCpresent)
@@ -79,9 +83,16 @@ presMod <- lmer(fin.area ~ ini.area + (1|quad),
 pastMod <- lmer(fin.area ~ ini.area + (1|quad), 
                       REML = FALSE, data = datSCpastTrunc)
 
+pastModAll <- lmer(fin.area ~ ini.area + (1|quad), 
+                   REML = FALSE, data = datSCpast)
+
 summary(presMod)
 summary(pastMod)
+summary(pastModAll)
+
 sd(resid(pastMod))
+sd(resid(pastModAll))
+
 
 ##### FINAL FIGURE - GROWTH SCALING BY ERA #####
 ylab_growth <- expression(paste("Size at time t+3 (", cm^2, ")"))
@@ -111,4 +122,30 @@ sizePlot <- size1 +
 sizePlot
 
 ggsave("./figs/growthPlot.pdf", height = 3.5, width = 3.5)
+
+
+###
+
+sizeAll <- ggplot(datSC, aes(ini.area, fin.area, color = time, shape = time)) +
+  ylab(ylab_growth) + xlab(xlab_growth) + 
+  theme(legend.justification = c(0, 0), legend.position = c(0.5, 0)) +
+  theme(legend.title = element_blank()) + 
+  geom_point(size = 2.5, alpha = 0.6, 
+             position = position_jitter(h = 0.05)) +
+  scale_colour_manual(breaks = c("past", "present"), 
+                      values = c("darkgray", "black"), 
+                      labels = c("1969-1972", "2007-2010")) +
+  scale_shape_manual(breaks = c("past", "present"), 
+                     values = c(18, 20), 
+                     labels = c("1969-1972", "2007-2010")) 
+
+sizePlotAll <- sizeAll + 
+  geom_smooth(method = "lm", se = FALSE, size = 0.75) + 
+  # labs(title = "B") + ULClabel + 
+  geom_abline(intercept = 0, slope = 1, linetype = 2, color = "black", size = 0.5) 
+
+sizePlotAll
+
+ggsave("./figs/growthPlotAll.pdf", height = 3.5, width = 3.5)
+
 

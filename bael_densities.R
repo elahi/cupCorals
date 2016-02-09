@@ -133,7 +133,8 @@ p3
 # VIOLIN PLOTS
 #################################################
 
-dat <- read.csv("./data/bael_histoData.csv", header=TRUE, na.strings="NA")
+dat <- read.csv("./data/bael_histoData.csv", header=TRUE, 
+                na.strings="NA")
 
 ### Data preparation
 ### Remove everything unnecessary for histograms of initial data
@@ -146,7 +147,8 @@ ini.dat <- droplevels(ini.dat[complete.cases(ini.dat$ini.area), ]) # drop NAs
 head(ini.dat)
 
 # create new column for Site_era
-ini.dat$siteEra <- as.factor(paste(ini.dat$site, ini.dat$time, sep = "_"))
+ini.dat$siteEra <- as.factor(paste(ini.dat$site, ini.dat$time, 
+                                   sep = "_"))
 unique(ini.dat$siteEra)
 # Reorder levels for plotting
 ini.dat$siteEra <- factor(ini.dat$siteEra, rev(c("SC_past", "SC_present", 
@@ -170,6 +172,15 @@ sizePlot <- ggplot(ini.dat,  aes(x = siteEra, y = ini.area, fill = time)) +
   scale_fill_manual(values = c("darkgray", "white"))
   
 p1 <- sizePlot + labs(title = "A") + ULClabel  
+
+quantile(past$ini.area, c(0.95, 0.99))
+max(past$ini.area)
+
+ini.dat %>% group_by(siteEra) %>%
+  summarise(maxObs = max(ini.area), 
+            max95 = quantile(ini.area, 0.95), 
+            max99 = quantile(ini.area, 0.99))
+
 
 ##########################################################
 # Multi-panel plots
