@@ -265,11 +265,13 @@ ggplot(ini.sc, aes(tempC, ini.area)) +
 ggplot(fin.sc, aes(tempC, fin.area)) +
   geom_violin(alpha = I(0.5), aes(color = time), 
               position = position_jitter(width = 0.01)) 
+summary(ini.sc)
 
 initialSize <- ini.sc %>% group_by(time) %>%
   summarise(maxSize = max(ini.area), 
             max99 = quantile(ini.area, 0.99), 
             max95 = quantile(ini.area, 0.95))
+initialSize
 
 finalSize <- fin.sc %>% group_by(time) %>%
   summarise(maxSize = max(fin.area), 
@@ -292,9 +294,10 @@ present_hist0710 <- data.frame(time = "present0710",
                                   max95 = quantile(hist0710$area, 0.95), 
                                   tempC = 9.25)
 present_hist0710
+sizeObs
 
 sizeObs <- rbind(sizeObs, present_hist0710)
-
+sizeObs
 ##### GET PREDICTED MAX SIZES  #####
 # Empirical historical and modern growth and survival functions 
 
@@ -318,8 +321,8 @@ res1$max99
 # full growth curve (historic data)
 res2$max99
 
-# use truncated growth curve
-maxSizeHistPred <- res2$max99
+# use full growth curve
+maxSizeHistPred <- res1$max99
 
 # Create data frame with predicted size at modern temp (above)
 # and predicted size at historic temperature, using the empirical

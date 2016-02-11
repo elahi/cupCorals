@@ -7,7 +7,7 @@
 #################################################
 
 library(ggplot2)
-theme_set(theme_classic(base_size = 10))
+theme_set(theme_classic(base_size = 12))
 library(reshape2)
 library(nlme)
 library(lme4)
@@ -172,9 +172,6 @@ sizePlot <- ggplot(ini.dat,  aes(x = siteEra, y = ini.area, fill = time)) +
   scale_fill_manual(values = c("darkgray", "white"))
   
 p1 <- sizePlot + labs(title = "A") + ULClabel  
-
-quantile(past$ini.area, c(0.95, 0.99))
-max(past$ini.area)
 
 ini.dat %>% group_by(siteEra) %>%
   summarise(maxObs = max(ini.area), 

@@ -8,7 +8,7 @@
 
 library(smatr)
 library(ggplot2)
-theme_set(theme_classic(base_size = 10))
+theme_set(theme_classic(base_size = 12))
 
 source("./R/graphicalParams.R")
 
@@ -38,6 +38,9 @@ ols1$coefficients
 # predicted biomass for 1.00 cm2, and 1.67 cm2
 area_given <- c(1, 1.67)
 
+# predicted biomass for 99% max sizes (0.91, 1.44)
+area_given <- c(0.91, 1.44)
+
 predict_biomass <- function(area) {
   (area * ols1$coefficients[2] + 
                 ols1$coefficients[1])
@@ -63,7 +66,8 @@ perChangeMass
 tempSizeResponse <- perChangeMass/0.65
 part1 <- paste(round(tempSizeResponse, 1), 
       "% change in mass per", sep = "")
-text1 <- expression(paste("70% reduction in mass per", degree, "C"))
+part1
+text1 <- expression(paste("65% reduction in mass per", degree, "C"))
 text1
 
 label1 <- expression(paste("Surface area (", cm^2, ")"))
@@ -73,8 +77,8 @@ ggplot(data = dat, aes(area, biomass)) +
   geom_point(shape = 1) + 
   geom_smooth(method = "lm", color = "black") + 
   xlab(label1) + ylab(label2) + 
-  scale_x_continuous(limits = c(0, 1.7)) + 
-  scale_y_continuous(limits = c(0, 160)) + 
+  scale_x_continuous(limits = c(0, 1.5)) + 
+  scale_y_continuous(limits = c(0, 140)) + 
   geom_point(data = predBiomass, 
              aes(area_given, biomass_pred, 
                  color = era, shape = era)) + 
@@ -105,7 +109,7 @@ label3 <- bquote(italic(R)^2 == 0.92)
 set_graph_pars(ptype = "panel1")
 par(cex = 1.5, las = 1)
 
-plot(massLN ~ areaLN, 
+plot(data = dat, massLN ~ areaLN, 
 	xlim = c(-3, 1),  ylim = c(-8, -1), 
 	xlab = label1, ylab = label2, lwd = 2)
 abline(a = 0, b = 1, lty = 2, lwd = 2, col = "gray")

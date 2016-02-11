@@ -22,6 +22,7 @@ dat$fin.areaLN <- log(dat$fin.area)
 
 datSC <- dat
 
+datSC$delta <- with(datSC, fin.area - ini.area)
 datSC %>% filter(delta < -0.1) # check coral B24 in photograph
 
 # Create dataset for SC present
@@ -31,12 +32,23 @@ datSCpast <- datSC[datSC$time == "past", ]
 
 # Truncate initial size range to reflect the largest observed size in 2007-2010 (1.0 cm2)
 set_graph_pars(ptype = "panel1")
+presMaxSize <- max(datSCpresent$ini.area) # max size of present corals for growth data
+
 plot(fin.area ~ ini.area, data = datSCpast)
 points(fin.area ~ ini.area, data = datSCpresent, col = "red")
+abline(v = presMaxSize, col = "red", lty = 3)
 abline(v = 0.95, col = "black", lty = 3)
+
 abline(a = 0, b = 1, col = "darkgray", lty = 2, lwd = 2)
 
-datSCTrunc <- datSC[datSC$ini.area <= 0.95, ]
+# set size cut-off
+sizeCutOff <- 0.95
+datSCTrunc <- datSC[datSC$ini.area <= sizeCutOff, ]
+
+head(datSC)
+ggplot(data = datSCpast, aes(ini.area, fin.area, color = quadOriginal)) +
+  geom_point() + geom_smooth(method = "lm", se = FALSE) + 
+  geom_abline(slope = 1, intercept = 0, linetype = 'dashed')
 
 ##### USE LMER TO TEST THE EFFECT OF ERA ON CORAL GROWTH #####
 ### Use truncated historical dataset to match observed size range in modern dataset
@@ -75,7 +87,8 @@ summary(Cand.mod[[1]])
 dat_growth <- lmerDat
 
 ##### GET MODEL PARAMETERS BY ERA #####
-datSCpastTrunc <- datSCpast[datSCpast$ini.area <= 0.95, ]
+datSCpastTrunc <- datSCpast[datSCpast$ini.area <= sizeCutOff, ]
+summary(datSCpastTrunc)
 
 presMod <- lmer(fin.area ~ ini.area + (1|quad), 
                       REML = FALSE, data = datSCpresent)
@@ -93,15 +106,18 @@ summary(pastModAll)
 sd(resid(pastMod))
 sd(resid(pastModAll))
 
-
 ##### FINAL FIGURE - GROWTH SCALING BY ERA #####
+
+datSC
+datSCTrunc
+
 ylab_growth <- expression(paste("Size at time t+3 (", cm^2, ")"))
 
 xlab_growth <- expression(paste("Size at time t (", cm^2, ")"))
 
 ULClabel <- theme(plot.title = element_text(hjust = -0.15, vjust = 1, size = rel(1.2)))
 
-size1 <- ggplot(dat_growth, aes(ini.area, fin.area, color = time, shape = time)) +
+size1 <- ggplot(datSCTrunc, aes(ini.area, fin.area, color = time, shape = time)) +
   ylab(ylab_growth) + xlab(xlab_growth) + 
   theme(legend.justification = c(0, 0), legend.position = c(0.5, 0)) +
   theme(legend.title = element_blank()) + 
@@ -116,7 +132,6 @@ size1 <- ggplot(dat_growth, aes(ini.area, fin.area, color = time, shape = time))
 
 sizePlot <- size1 + 
   geom_smooth(method = "lm", se = FALSE, size = 0.75) + 
-  # labs(title = "B") + ULClabel + 
   geom_abline(intercept = 0, slope = 1, linetype = 2, color = "black", size = 0.5) 
 
 sizePlot
@@ -141,7 +156,6 @@ sizeAll <- ggplot(datSC, aes(ini.area, fin.area, color = time, shape = time)) +
 
 sizePlotAll <- sizeAll + 
   geom_smooth(method = "lm", se = FALSE, size = 0.75) + 
-  # labs(title = "B") + ULClabel + 
   geom_abline(intercept = 0, slope = 1, linetype = 2, color = "black", size = 0.5) 
 
 sizePlotAll
