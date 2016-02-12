@@ -15,20 +15,22 @@ source("./R/graphicalParams.R")
 dat <- read.csv("./data/bael_CN_2015.csv")
 dat
 
-dat$massLN <- log(dat$biomass)
-dat$areaLN <- log(dat$area)
-
-###########
-# Untransformed plot
-# OLS regression for prediction
-###########
-
-head(dat)
-dat$category <- rep("Empirical")
-
 # change biomass from g to mg
 biomass_mg <- dat$biomass * 1000
 dat$biomass <- biomass_mg
+
+# change surface area from cm2 to mm2
+dat$mm <- dat$area * 100
+
+dat$massLN <- log(dat$biomass)
+dat$areaLN <- log(dat$area)
+dat$mmLN <- log(dat$mm)
+summary(dat)
+
+##### Untransformed plot, OLS regression for prediction #####
+
+head(dat)
+dat$category <- rep("Empirical")
 
 # Regression
 ols1 <- lm(biomass ~ area, data = dat)
@@ -91,9 +93,75 @@ ggplot(data = dat, aes(area, biomass)) +
 
 ggsave("./figs/biomassPlot.pdf", height = 3.5, width = 3.5)  
 
-###########
-# Scaling plot
-###########
+##### Log-log plot, OLS regression for prediction #####
+
+head(dat)
+dat$category <- rep("Empirical")
+
+# Regression
+ols1 <- lm(massLN ~ mmLN, data = dat)
+summary(ols1)
+ols1$coefficients
+
+# predicted biomass for 1.00 cm2, and 1.67 cm2
+area_given <- log(c(1, 1.67) * 100)
+
+# predicted biomass for 99% max sizes (0.91, 1.44)
+area_given <- log(c(0.91, 1.44) * 100)
+area_given
+
+predict_biomass <- function(area) {
+  (area * ols1$coefficients[2] + 
+     ols1$coefficients[1])
+}
+
+biomass_predLN <- predict_biomass(area_given)
+biomass_predLN
+biomass_pred <- exp(biomass_predLN)
+biomass_pred
+
+# create dataframe for predicted biomass
+predBiomass <- as.data.frame(cbind(area_given, biomass_predLN, biomass_pred))
+predBiomass$era <- c("modern", "historic")
+
+# Calculate percent change per degree
+predBiomass
+mass_Mod <- predBiomass$biomass_pred[1]
+mass_Hist <- predBiomass$biomass_pred[2]
+
+perChangeMass <- (mass_Hist - mass_Mod)/(mass_Hist) * 100
+perChangeMass
+
+# Temperature has increased by 0.65 C
+# Normalize to one degree change to match Forster 2012
+tempSizeResponse <- perChangeMass/0.65
+tempSizeResponse
+
+part1 <- paste(round(tempSizeResponse, 1), 
+               "% change in mass per", sep = "")
+part1
+text1 <- expression(paste("65% reduction in mass per", degree, "C"))
+text1
+
+label1 <- expression(paste("Surface area [", log(mm^2), "]"))
+label2 <- "Biomass [ln(mg)]"
+
+ggplot(data = dat, aes(mmLN, massLN)) + 
+  geom_point(shape = 1, size = 2) + 
+  geom_smooth(method = "lm", color = "black") + 
+  xlab(label1) + ylab(label2) + 
+  geom_point(data = predBiomass, 
+             aes(area_given, biomass_predLN, 
+                 color = era, shape = era), size = 2.5) + 
+  scale_color_manual(values = c("darkgray", "black")) +
+  scale_shape_manual(values = c(18, 20)) + 
+  theme(legend.position = "none") + 
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed")
+
+ggsave("./figs/biomassPlotLN.pdf", height = 3.5, width = 3.5)  
+
+##### Scaling plot; log-log axes; MA regression #####
+
 mod0 <- ma(massLN ~ areaLN, data = dat, 
            slope.test = 1)
 summary(mod0)
@@ -103,11 +171,19 @@ mod1 <- sma(massLN ~ areaLN, data = dat,
 
 summary(mod1)
 
-
 label3 <- bquote(italic(R)^2 == 0.92)
 
 set_graph_pars(ptype = "panel1")
 par(cex = 1.5, las = 1)
+
+plot(data = dat, massLN ~ areaLN)
+
+ggplot(data = dat, aes(areaLN, massLN)) + geom_point() + 
+  geom_abline(slope = 1, intercept = 0) + 
+  stat_smooth(method = "lm")
+
+mod1_f <- fortify(mod1)
+
 
 plot(data = dat, massLN ~ areaLN, 
 	xlim = c(-3, 1),  ylim = c(-8, -1), 

@@ -53,7 +53,7 @@ ggplot(data = datSCpast, aes(ini.area, fin.area, color = quadOriginal)) +
 ##### USE LMER TO TEST THE EFFECT OF ERA ON CORAL GROWTH #####
 ### Use truncated historical dataset to match observed size range in modern dataset
 lmerDat <- datSCTrunc
-lmerDat <- datSC
+# lmerDat <- datSC
 
 # Random effects are quadrat (original quadrats for historical study, not subquads)
 # Don't need varying slopes by quadrat 

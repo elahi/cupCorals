@@ -381,13 +381,15 @@ maxSizePlot + pPred + pPred2 + obsPoints
 
 ### How different are these observed and predicted values?
 sizeObs
-maxSizeHistObs <- sizeObs$maxSize[1]
-maxSizeModObs <- sizeObs$maxSize[2]
+maxSizeHistObs <- sizeObs$max99[1]
+maxSizeModObs <- sizeObs$max99[2]
 
 maxSizeHistObs  
 maxSizeModObs
 maxSizeHistPred  
 maxSizeModPred
 
+(maxSizeHistPred - maxSizeModPred)/maxSizeModPred
+
 observedChange <- maxSizeHistObs - maxSizeModObs
-observedChange
+observedChange/maxSizeHistObs
