@@ -213,4 +213,10 @@ sc_meanTemp_pres <- presSC %>% summarise(meanTemp = mean(tempSC, na.rm = TRUE))
 
 hms_meanTemp <- fadTemp %>% summarise(meanTemp = mean(SST, na.rm = TRUE))
 
-sc_meanTemp_pres; sc_meanTemp_past; hms_meanTemp
+# get data relevant to Fadlallah's embryo-size function
+# Use years 1976-1980 - these were the years during which Fadlallah did fieldwork, based on the 1983 paper - he does not say when the embryo study was done, only stating that it was conducted over an 18 month period
+
+embryoTemp <- filter(hms, year > 1975 & year < 1980) %>%
+  summarise(meanTemp = mean(SST, na.rm = TRUE)) # 4 year period, 
+
+sc_meanTemp_pres; sc_meanTemp_past; hms_meanTemp; embryoTemp

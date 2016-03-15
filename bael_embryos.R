@@ -12,6 +12,8 @@ theme_set(theme_classic(base_size = 16))
 library(dplyr)
 
 source("./R/baelFunctions.R")
+source("./R/metabolicTheory.R")
+source("bael_temperature.R")
 
 # Need to estimate the relationship between coral size and embryo #
 # use data in Fadlallah Figure 5 and Table 6
@@ -81,7 +83,21 @@ mxReg$coefficients
 
 # Adjust for temperature to obtain Washington relationship
 xIntCA <- -mxReg$coefficients[1]/mxReg$coefficients[2]
-xIntWA <- 16.28972/mxReg$coefficients[2]
+xIntCA
+
+# Get a_coef for the intercept of the embryo function
+kelvin_CA <- as.numeric(embryoTemp) + 273.15
+kelvin_WA <- as.numeric(sc_meanTemp_pres) + 273.15
+
+y_intercept_CA <- mxReg$coefficients[1]
+y_intercept_CA
+
+embryo_A <- aCoef(y_intercept_CA, E, k, temp = kelvin_CA, dir = "neg")
+y_intercept_WA <- ArrF(embryo_A, E, k, temp = kelvin_WA, dir = "neg")
+
+xIntWA <- -y_intercept_WA/mxReg$coefficients[2]
+xIntWA
+
 sizeDiff <- xIntWA - xIntCA; sizeDiff
 
 ltDat$areaRcorr <- ltDat$areaR + sizeDiff
@@ -98,6 +114,3 @@ abline(mxRegCA)
 points(mx.coral ~ areaRcorr, data = ltDat, xlim = c(0, 1.5), ylim = c(0, 50),
        xlab = "Size (cm2)", ylab = "No. of embryos", las = 1)
 abline(mxRegWA, lty = 2)
-
-
-
