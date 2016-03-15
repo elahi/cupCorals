@@ -25,9 +25,22 @@ source("./R/graphicalParams.R")
 density.q <- tapply(dat$area, list(dat$quad, dat$date.no), FUN=densityF)
 density.q
 
+str(dat)
+unique(dat$date)
+
 # Use embryo function for Washington and California
 dat$embryosWA <- embryoFwa(dat$area)
 dat$embryosCA <- embryoFca(dat$area)
+
+# Calculate the number of embryos produced by each coral
+dat$embryos <- embryoF(dat$area, xIntercept = xIntWA, mxRegression = mxRegWA)
+
+# Remove 2010 data, and then get total number of embryos per quad
+
+quad_embryosDF <- dat %>% filter(date.no != 40515) %>% 
+  group_by(quad) %>%
+  summarise(quadEmbryos = sum(embryos, na.rm = TRUE))
+  
 
 ### Calculate number of embryos for each quadrat and year - WA
 embryoWA.q <- tapply(dat$embryosWA, list(dat$quad, dat$date.no), FUN=sum, na.rm=TRUE)
@@ -44,6 +57,26 @@ eqCA <- embryoCA.q[,-4]
 eqCASum <- rowSums(eqCA)
 
 ##### CALCULATE NUMBER OF RECRUITS THAT SURVIVED TO TIME 3 (2010) #####
+
+### NEW WAY
+# These are the observed recruits every year
+recruitDat <- dat %>% filter(recruit ==1) %>% select(coral.id, code) %>%
+  rename(recruitCode = code)
+head(recruitDat)
+
+quad_recruitsDF <- dat %>% filter(date.no == 40515) %>% 
+  left_join(., recruitDat, by = "coral.id") %>%
+  group_by(quad) %>%
+  summarise(quadRecruits = recruitF(recruitCode)) 
+
+# Join embryos with recruits, then calculate establishment probability
+quad_DF <- inner_join(quad_recruitsDF, quad_embryosDF) %>% 
+  mutate(recProb = quadRecruits/quadEmbryos * 100)
+
+quad_DF$recProb[is.infinite(quad_DF$recProb)] <- NaN
+quad_DF
+
+### OLD WAY
 names(dat)
 # Select the relevant columns
 d <- dat[, which(names(dat) %in% c("quad", "date", "date.no", 

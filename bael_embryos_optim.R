@@ -4,7 +4,7 @@
 # Coral embryos - testing a range of activation energies
 #################################################
 
-source("./embryos.R")
+source("./bael_embryos.R")
 
 ##### ESTIMATE WA X-INTERCEPT OVER A RANGE OF ACTIVATION ENERGIES #####
 
@@ -47,12 +47,17 @@ for (i in 1:length(vector_Ea)) {
 }
 
 embryoInterceptsDF <- loopDat
+head(embryoInterceptsDF)
+
+embryoInterceptsDF$sizeDiff <- xIntWA - xIntCA
 
 
-
-sizeDiff <- xIntWA - xIntCA; sizeDiff
 
 ltDat$areaRcorr <- ltDat$areaR + sizeDiff
 mxRegWA <- lm(mx.coral ~ areaRcorr, data = ltDat[ltDat$Vol.mid > 75, ])
 mxRegCA <- lm(mx.coral ~ areaR, data = ltDat[ltDat$Vol.mid > 75, ])
 
+sizeDiff
+ltDat
+mxRegCA
+mxRegWA

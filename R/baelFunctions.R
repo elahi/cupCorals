@@ -37,6 +37,18 @@ matureFwa <- function(area) {
   ifelse(area < xIntWA, 0, 1)
 }
 
+# General function
+
+embryoF <- function(area, xIntercept, mxRegression) {
+  ifelse(area < xIntercept, 0, 
+         area * mxRegression$coefficients[2] + mxRegression$coefficients[1])
+}
+
+matureF <- function(area, xIntercept) {
+  ifelse(area < xIntercept, 0, 1)
+}
+
+
 ##### FUNCTION TO CALCULATE ADULT DENSITY #####
 # do not count NAs or corals smaller than 0.01 (?)
 

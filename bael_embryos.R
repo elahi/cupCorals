@@ -82,8 +82,9 @@ xx <- seq(0, 1.2, by = 0.1)
 mxReg$coefficients
 
 # Adjust for temperature to obtain Washington relationship
+yIntCA <- mxReg$coefficients[1]
+slopeCA <- mxReg$coefficients[2]
 xIntCA <- -mxReg$coefficients[1]/mxReg$coefficients[2]
-xIntCA
 
 # Get a_coef for the intercept of the embryo function
 kelvin_CA <- as.numeric(embryoTemp) + 273.15
