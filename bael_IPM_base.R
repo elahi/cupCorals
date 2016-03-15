@@ -9,7 +9,6 @@ rm(list=ls(all=TRUE))
 
 ##### LOAD PACKAGES ETC #####
 source("./R/bael_params.R")
-# source("./R/baelParamsCA.R")
 source("./R/ipmFunctions.R")
 
 # Data from ipmData.csv:
@@ -56,9 +55,7 @@ res2 <- popF(ipm2, binSize)
 res2
 
 ##### PLOTTING #####
-# pdf("./figs/ipm_histo_fit.pdf", 7, 3.5)
-
-pdf("./figs/ipm_histo_fit_test.pdf", 7, 3.5)
+pdf("./figs/ipm_histo_fit.pdf", 7, 3.5)
 
 set_graph_pars(ptype = "panel2")
 xlab2 <- expression(paste("Size (", cm^2, ")"))

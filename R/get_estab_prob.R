@@ -7,7 +7,7 @@
 
 ##### LOAD PACKAGES, DATA #####
 source("./bael_embryos.R") # this also loads bael_functions
-
+library(tidyr)
 # California derived parameters from this embryos script
 xIntCA; yIntCA; slopeCA
 ltDat
@@ -57,17 +57,18 @@ get_fecundity_params <- function(E, k, kelvin) {
     summarise(quadRecruits = recruitF(recruitCode)) 
   
   # Join embryos with recruits, then calculate establishment probability
-  quad_DF <- inner_join(quad_recruitsDF, quad_embryosDF) %>% 
+  quad_DF <- inner_join(quad_recruitsDF, quad_embryosDF, by = "quad") %>% 
     mutate(recProb = quadRecruits/quadEmbryos)
   
   quad_DF$recProb[is.infinite(quad_DF$recProb)] <- NaN
 
   estabDF <- quad_DF %>% summarise(estab.prob.mean = mean(recProb, na.rm = TRUE), 
-                                   estab.prob.sd = sd(recProb, na.rm = TRUE))
+                                   estab.prob.sd = sd(recProb, na.rm = TRUE), 
+                                   embryos.mean = mean(quadEmbryos, na.rm = TRUE))
   
   estabDF$embryo.int <- yIntWA
   estabDF$mature.size <- xIntWA
-  
+
   return(estabDF)
 
 }
@@ -76,12 +77,13 @@ get_fecundity_params <- function(E, k, kelvin) {
 get_fecundity_params(E = E, k = k, kelvin = kelvin_CA)
 
 
-vector_Ea <- seq(0.6, 0.67, by = 0.001)
+vector_Ea <- seq(0.5, 0.7, by = 0.005)
 loopDat <- data.frame(Ea = vector_Ea, 
                       estab.prob.mean = NA, 
                       estab.prob.sd = NA, 
                       embryo.int = NA, 
-                      mature.size = NA)
+                      mature.size = NA, 
+                      embryos.mean = NA)
 loopDat
 
 for (i in 1:length(vector_Ea)) {
@@ -95,8 +97,40 @@ for (i in 1:length(vector_Ea)) {
   loopDat[i, ]$estab.prob.sd <- estabDF.i$estab.prob.sd
   loopDat[i, ]$embryo.int <- estabDF.i$embryo.int
   loopDat[i, ]$mature.size <- estabDF.i$mature.size
+  loopDat[i, ]$embryos.mean <- estabDF.i$embryos.mean
   
 }
 
 loopDat
+
+# Remove data where mature.size exceeds the observed value
+max(dat$area, na.rm = TRUE)
+loopDat2 <- loopDat %>% filter(mature.size < 1.1 &
+                                estab.prob.mean < 1)
+
+loopLong <- loopDat2 %>% gather(key = parameter, value = value, 
+                               estab.prob.mean:embryos.mean)
+
+head(loopLong)
+str(loopLong)
+unique(loopLong$parameter)
+
+# Reorder factor levels
+loopLong$parameter <- factor(loopLong$parameter)
+levels(loopLong$parameter)
+loopLong$parameter <- factor(loopLong$parameter, 
+                    levels(loopLong$parameter)[c(1,5,2,3,4)])
+
+
+ggplot(loopLong, aes(Ea, value)) + 
+  geom_point(size = 0.5) + geom_line(color = 'red') +
+  facet_wrap(~ parameter, scales = "free") + 
+  ylab("Parameter value") + xlab("Activation energy (Ea)") + 
+  geom_point(data = loopLong[loopLong$Ea == 0.65, ], 
+             aes(Ea, value), color = "blue")
+
+ggsave("figs/fecundityParams_Ea_sensitivity.pdf", 
+       height = 3.5, width = 5)
+
+
 

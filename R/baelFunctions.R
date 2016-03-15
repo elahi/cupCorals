@@ -21,7 +21,7 @@ areaCalcF <- function(x){
 embryoFca <- function(area) {
   ifelse(area < xIntCA, 
          0, 
-         area*mxReg$coefficients[2] - mxReg$coefficients[1])
+         area*mxReg$coefficients[2] + mxReg$coefficients[1])
 }
 matureFca <- function(area) {
   ifelse(area < xIntCA, 0, 1)
