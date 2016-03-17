@@ -40,12 +40,8 @@ binSize <- 0.02
 binN <- (max.size - min.size)/binSize
 binN
 
-# breaks = seq(0.02, 1.5, 0.02),
-
 ##### IPMs WITH FOR LOOP THROUGH EAS #####
-head(loopDat2)
-
-data_in <- loopDat2
+data_in <- loopDat
 N <- dim(data_in)[1]
 
 # Lists to store the results of IPMs
@@ -146,8 +142,20 @@ ggplot(logLikLong, aes(Ea, LogLik)) +
   geom_point(data = logLikLong[logLikLong$Ea == 0.65, ],
              aes(Ea, LogLik), color = "blue")
 
-ggsave("figs/fecundityParams_Ea_LogLik.pdf",
+ggsave("figs/fecundityParams_Ea_LogLik_3.pdf",
        height = 3.5, width = 7)
+
+bothYears <- logLikLong %>% filter(Year == "SizeDistribution_bothYears") %>%
+  filter(LogLik < 50)
+
+ggplot(bothYears, aes(Ea, LogLik)) +
+  geom_point(size = 0.5) + geom_line(color = 'red') +
+  ylab("Log likelihood") + xlab("Activation energy (Ea)") +
+  geom_point(data = logLikLong[logLikLong$Ea == 0.65, ],
+             aes(Ea, LogLik), color = "blue")
+
+ggsave("figs/fecundityParams_Ea_LogLik_1.pdf",
+       height = 3.5, width = 3.5)
 
 ##### MINIMIZE LOG-LIKELIHOOD, SELECT EA #####
 
@@ -156,6 +164,7 @@ llDF <- logLikLong %>% group_by(Year) %>%
   arrange(LogLik) %>% slice(1:5)
 
 medianEa <- llDF %>% ungroup() %>% summarise(median = median(Ea))
+medianEa
 
 # This is the lowest LogLik (i.e. optimized)
 llDF %>% ungroup() %>% arrange(LogLik) %>% slice(1:1)
@@ -190,25 +199,36 @@ add_panel_label(ltype = "a")
 #         col = vec_colors[i], lwd = 1)
 # }
 
-abline(mxRegWA, lwd=2, lty=1, col = "darkgray")
+# abline(mxRegWA, lwd=2, lty=1, col = "darkgray")
 abline(mxRegCA, lwd=2, lty=1)
 abline(a = 0, b = 0, lty=3, lwd=2, col="darkgray")
 points(mx.coral ~ areaR, data = ltDat)
 
 curve(slopeCA * x + data_in$embryo.int[medianEa_position], 
       from = 0, to = 1.5, add = TRUE,
-        col = "red", lwd = 2)
+        col = "darkgray", lwd = 2)
 
 
 add_panel_label(ltype = "a")
+legend("bottomright", "n = 12", cex = 1.1, bty = "n", adj = c(0,-2))
+
+leg.txt <- c("Original", "Modified")
+legend("topleft", leg.txt, lwd = 2, bty = "n", 
+       col = c("black", "darkgray"), lty = 1, 
+       cex = 1, text.col = c("black", "darkgray"))
 
 #### Panel B ####
-# Note that histogram range must match the IPM bins
 quantile(hist0710$area, probs = c(0.95, 0.99))
+obs99 <- quantile(hist0710$area, probs = 0.99)
 
-hist(hist0710$area, breaks = seq(0.02, 1.5, 0.02), freq = FALSE,
+# hist(hist0710$area, breaks = seq(0.02, 1.5, 0.02), freq = FALSE,
+#      xlab = xlab2, ylab="Probability density", col = "gray87", main = "",
+#      ylim = c(-0.025, 2.5), xlim = c(0, 1.5), border = "gray90", las = 1)
+
+# Used larger bins to reduce noise
+hist(hist0710$area, breaks = seq(0.0, 1.5, 0.05), freq = FALSE,
      xlab = xlab2, ylab="Probability density", col = "gray87", main = "",
-     ylim = c(-0.025, 2.5), xlim = c(0, 1.4), border = "gray90", las = 1)
+     ylim = c(-0.025, 2), xlim = c(0, 1.4), border = "gray90", las = 1)
 
 box()
 
@@ -217,9 +237,9 @@ box()
 #          col = vec_colors[i])
 # }
 
-# Ea = 0.65 
-points(ipm1$meshpts , res1$ssd2, type="l", lty=1, lwd = 2, 
-       col = "darkgray")
+# # Ea = 0.65 
+# points(ipm1$meshpts , res1$ssd2, type="l", lty=1, lwd = 2, 
+#        col = "darkgray")
 
 # California parameters
 points(ipm2$meshpts , res2$ssd2, type="l", lty=1, lwd = 2, 
@@ -228,23 +248,34 @@ points(ipm2$meshpts , res2$ssd2, type="l", lty=1, lwd = 2,
 # Optimized Ea = 0.658
 points(ipm_out[[medianEa_position]]$meshpts , 
        res_out[[medianEa_position]]$ssd2, type="l", lty=1, lwd = 2, 
-       col = "red")
+       col = "darkgray")
 
-arrows(res1$max99, 0.6, res1$max99, 0.3, col = "darkgray", 
-       length = 0.1, lwd = 1.5, angle = 20)
+# arrows(res1$max95, 0.6, res1$max95, 0.3, col = "darkgray", 
+#        length = 0.1, lwd = 1.5, angle = 20)
 
-arrows(res2$max99, 0.6, res2$max99, 0.3, col = "black", 
-       length = 0.1, lwd = 1.5, angle = 20)		
+arrows(res2$max95, 0.4, res2$max95, 0.05, col = "black", 
+       length = 0.1, lwd = 1, angle = 20, lty = 1)		
+arrows(res2$max99, 0.4, res2$max99, 0.05, col = "black", 
+         length = 0.1, lwd = 1, angle = 20, lty = 1)
 
-arrows(res_out[[medianEa_position]]$max99, 0.6, 
-       res_out[[medianEa_position]]$max99, 0.3, col = "red", 
-       length = 0.1, lwd = 1.5, angle = 20)	
+arrows(res_out[[medianEa_position]]$max95, 0.4, 
+         res_out[[medianEa_position]]$max95, 0.05, col = "darkgray", 
+         length = 0.1, lwd = 1, angle = 20, lty = 1)	
+
+arrows(res_out[[medianEa_position]]$max99, 0.4, 
+         res_out[[medianEa_position]]$max99, 0.05, col = "darkgray", 
+         length = 0.1, lwd = 1, angle = 20, lty = 1)	
+
+points(obs99, 0, pch = 21, col = "darkgray", lwd = 2)
 
 res_out[[medianEa_position]]$max99
 res_out[[medianEa_position]]$max95
 
 add_panel_label(ltype = "b")
 
-dev.off()
+legend("topright", leg.txt, lwd = 2, bty = "n", 
+       col = c("black", "darkgray"), lty = 1, 
+       cex = 1, text.col = c("black", "darkgray"))
 
+dev.off()
 

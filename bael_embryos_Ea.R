@@ -26,7 +26,8 @@ loopDat <- data.frame(Ea = vector_Ea,
                       estab.prob.sd = NA, 
                       embryo.int = NA, 
                       mature.size = NA, 
-                      embryos.mean = NA)
+                      embryos.mean = NA, 
+                      quad.n = NA)
 loopDat
 
 for (i in 1:length(vector_Ea)) {
@@ -34,28 +35,31 @@ for (i in 1:length(vector_Ea)) {
   
   estabDF.i <- get_fecundity_params(E = E.i, 
                                     k = k, kelvin = kelvin_WA)
-  
+
   loopDat[i, ]$Ea <- E.i
   loopDat[i, ]$estab.prob.mean <- estabDF.i$estab.prob.mean
   loopDat[i, ]$estab.prob.sd <- estabDF.i$estab.prob.sd
   loopDat[i, ]$embryo.int <- estabDF.i$embryo.int
   loopDat[i, ]$mature.size <- estabDF.i$mature.size
   loopDat[i, ]$embryos.mean <- estabDF.i$embryos.mean
+  loopDat[i, ]$quad.n <- estabDF.i$quad.n
   
 }
 
+estabDF.i
 loopDat
 
 ##### CLEAN UP RESULTS #####
 
 # Remove data where mature.size exceeds the observed value
 max(dat$area, na.rm = TRUE)
-loopDat2 <- loopDat %>% filter(mature.size < 1.1 &
-                                 estab.prob.mean < 1 &
-                                 embryos.mean > 1)
+head(loopDat)
+tail(loopDat)
 
-loopLong <- loopDat2 %>% gather(key = parameter, value = value, 
-                                estab.prob.mean:embryos.mean)
+# loopDat2 <- loopDat %>% filter(estab.prob.mean > 0)
+
+loopLong <- loopDat %>% gather(key = parameter, value = value, 
+                                estab.prob.mean:quad.n)
 
 head(loopLong)
 str(loopLong)
@@ -65,11 +69,13 @@ unique(loopLong$parameter)
 loopLong$parameter <- factor(loopLong$parameter)
 levels(loopLong$parameter)
 loopLong$parameter <- factor(loopLong$parameter, 
-                             levels(loopLong$parameter)[c(1,5,2,3,4)])
+                             levels(loopLong$parameter)[c(1,5,2,6,3,4)])
 
 ##### PLOT RESULTS #####
 
-ggplot(loopLong, aes(Ea, value)) +
+ggDat <- loopLong
+
+ggplot(ggDat, aes(Ea, value)) +
   geom_point(size = 0.5) + geom_line(color = 'red') +
   facet_wrap(~ parameter, scales = "free") +
   ylab("Parameter value") + xlab("Activation energy (Ea)") +
@@ -77,7 +83,7 @@ ggplot(loopLong, aes(Ea, value)) +
              aes(Ea, value), color = "blue")
 
 ggsave("figs/fecundityParams_Ea_sensitivity.pdf",
-       height = 3.5, width = 5)
+       height = 5, width = 8)
 
 
 

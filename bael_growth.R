@@ -136,7 +136,7 @@ sizePlot <- size1 +
 
 sizePlot
 
-ggsave("./figs/growthPlot.pdf", height = 3.5, width = 3.5)
+# ggsave("./figs/growthPlot.pdf", height = 3.5, width = 3.5)
 
 
 ###
@@ -160,6 +160,6 @@ sizePlotAll <- sizeAll +
 
 sizePlotAll
 
-ggsave("./figs/growthPlotAll.pdf", height = 3.5, width = 3.5)
+# ggsave("./figs/growthPlotAll.pdf", height = 3.5, width = 3.5)
 
 

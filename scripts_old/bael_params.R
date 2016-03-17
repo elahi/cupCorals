@@ -64,36 +64,54 @@ datPres <- dat[dat$time == "present", ]
 params$recruit.size.mean <- mean(datPres$area)
 params$recruit.size.sd <- sd(datPres$area)
 
-##### EMBRYO SLOPE AND EMBRYO SD #####
+params
 
-source("./bael_embryos_Ea.R")
+##### CREATE FORK FOR CALIFORNIA AND WASHINGTON #####
+# The embryo function is originally from California, 
+# and was modified using the Arrhenius equation for Washington, 
+# which has colder seawater
 
-# Embryo intercept will vary with temperature or Ea, but slope and sd will remain the same
-params$embryo.slope <- coefficients(mxRegCA)[2]
-params$embryo.sd <- sd(resid(mxRegCA))
+# The modified embryo-size function causes downstream changes to
+# size at maturity and establishment probability
 
+paramsWA <- params
+paramsCA <- params
 
+##### EMBRYO FUNCTION #####
+# Note that the embryo function determines size at maturity and
+# establishment probability
+
+source("./bael_embryos.R")
+
+# These are the relevant outputs
+mxRegWA
+mxRegCA
+
+# Store vital rate parameters for California
+paramsCA$embryo.int <- coefficients(mxRegCA)[1]
+paramsCA$embryo.slope <- coefficients(mxRegCA)[2]
+paramsCA$embryo.sd <- sd(resid(mxRegCA))
+
+# Store vital rate parameters for Washington
+paramsWA$embryo.int <- coefficients(mxRegWA)[1]
+paramsWA$embryo.slope <- coefficients(mxRegWA)[2]
+paramsWA$embryo.sd <- sd(resid(mxRegWA))
+
+paramsCA
+paramsWA
+
+##### SIZE AT MATURITY #####
+paramsCA$mature.size <- -paramsCA$embryo.int/paramsCA$embryo.slope
+paramsWA$mature.size <- -paramsWA$embryo.int/paramsCA$embryo.slope
 
 ##### ESTABLISHMENT PROBABILITY #####
-source("R/get_estab_prob.R")
+source("./bael_establishment.R")
 
-fecCA <- get_fecundity_params(E = 0.65, k, kelvin = kelvin_CA)
-fecWA <- get_fecundity_params(E = 0.65, k, kelvin = kelvin_WA)
-fecOptim <- get_fecundity_params(E = 0.65, k, kelvin = kelvin_WA)
+paramsWA$estab.prob.mean <- mean(recProbWA/100, na.rm = TRUE) 
+paramsWA$estab.prob.sd <- sd(recProbWA/100, na.rm = TRUE)
 
-paramsCA <- params
-paramsWA <- params
-
-paramsCA$estab.prob.mean <- fecCA$estab.prob.mean
-paramsCA$estab.prob.sd <- fecCA$estab.prob.sd
-paramsCA$mature.size <- fecCA$mature.size
-paramsCA$embryo.int <- fecCA$embryo.int
-
-paramsWA$estab.prob.mean <- fecWA$estab.prob.mean
-paramsWA$estab.prob.sd <- fecWA$estab.prob.sd
-paramsWA$mature.size <- fecWA$mature.size
-paramsWA$embryo.int <- fecWA$embryo.int
-
+paramsCA$estab.prob.mean <- mean(recProbCA/100, na.rm = TRUE) 
+paramsCA$estab.prob.sd <- sd(recProbCA/100, na.rm = TRUE)
 
 ##### COMPLETE DATAFRAME #####
 paramsCA

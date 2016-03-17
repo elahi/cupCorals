@@ -9,13 +9,19 @@
 ##' k = Boltzmann's constant
 ##' kelvin = desired temperature
 
+# California derived parameters (from embryos script)
+xIntCA; yIntCA; slopeCA
+ltDat # life table
+
+### Constants ###
+k <- 0.0000862 # boltzmann constant (metabolic theory)
+E <- 0.65 #activation energy for development rate = 0.65. E for PLD (1/dev) = -0.65
 
 # Store the coefficient A from arrhenius equation for the y intercept of the embryo-size regression
 embryo_A <- aCoef(yIntCA, E, k, temp = kelvin_CA, dir = "neg")
 
 # Load the ipm data - need this for estimating recruitment probability
 dat <- read.csv("./data/bael_ipmData.csv", header=TRUE, na.strings="NA")
-
 
 get_fecundity_params <- function(E, k, kelvin) {
   
@@ -45,17 +51,26 @@ get_fecundity_params <- function(E, k, kelvin) {
   
   # Join embryos with recruits, then calculate establishment probability
   quad_DF <- inner_join(quad_recruitsDF, quad_embryosDF, by = "quad") %>% 
-    mutate(recProb = quadRecruits/quadEmbryos)
-  
-  quad_DF$recProb[is.infinite(quad_DF$recProb)] <- NaN
+    mutate(recProb = ifelse(quadRecruits == 0 &
+                              quadEmbryos == 0, 0, 
+                            ifelse(quadRecruits > quadEmbryos, 
+                                   NA, quadRecruits/quadEmbryos)))
 
+  # quad_DF <- inner_join(quad_recruitsDF, quad_embryosDF, by = "quad") %>% 
+  #   mutate(recProb = quadRecruits/quadEmbryos)
+  
+  quad_DF$recProb[is.infinite(quad_DF$recProb)] <- NA
+  
   estabDF <- quad_DF %>% summarise(estab.prob.mean = mean(recProb, na.rm = TRUE), 
                                    estab.prob.sd = sd(recProb, na.rm = TRUE), 
-                                   embryos.mean = mean(quadEmbryos, na.rm = TRUE))
+                                   embryos.mean = mean(quadEmbryos, na.rm = TRUE), 
+                                   quad.n = length((recProb)[!is.na(recProb)]))
   
   estabDF$embryo.int <- yIntWA
   estabDF$mature.size <- xIntWA
-
+  
+  estabDF
+  
   return(estabDF)
 
 }

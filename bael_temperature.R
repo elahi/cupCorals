@@ -178,9 +178,9 @@ plot_temp_daily <- ggplot(data = longSC, aes(era, tempSC)) +
   ULClabel + labs(title = "B")
 
 ### save as pdf
-pdf("./figs/sc_temp_plot.pdf", width = 7, height = 3.5)
-multiplot(plot_temp_annual, plot_temp_daily,cols = 2)
-dev.off()
+# pdf("./figs/sc_temp_plot.pdf", width = 7, height = 3.5)
+# multiplot(plot_temp_annual, plot_temp_daily,cols = 2)
+# dev.off()
 
 ##### CALIFORNIA ANALYSIS #####
 ### Hopkins Marine Station handheld SST from caretaker's lodge
