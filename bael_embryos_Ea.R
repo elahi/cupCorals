@@ -82,8 +82,8 @@ ggplot(ggDat, aes(Ea, value)) +
   geom_point(data = loopLong[loopLong$Ea == 0.65, ],
              aes(Ea, value), color = "blue")
 
-ggsave("figs/fecundityParams_Ea_sensitivity.pdf",
-       height = 5, width = 8)
+# ggsave("figs/fecundityParams_Ea_sensitivity.pdf",
+#        height = 5, width = 8)
 
 
 

@@ -34,7 +34,7 @@ hist0710 <- rbind(hist07, hist10)
 # Will use slightly larger size range for IPM because
 # it is otherwise artificially truncated
 min.size <- 0.02
-max.size <- 1.5
+max.size <- 1.52
 
 binSize <- 0.02
 binN <- (max.size - min.size)/binSize

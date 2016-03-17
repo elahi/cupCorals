@@ -2,13 +2,14 @@
 # Author: Robin Elahi
 # Date: 151203
 # Sensitivity analysis of base IPM
+# MODFIED
+# 160317: Used optimized parameters for fecundity
 #################################################
 
 rm(list=ls(all=TRUE))
 
 ##### LOAD PACKAGES ETC #####
 source("./R/bael_params.R") 
-params <- paramsWA
 
 source("./R/multiplotF.R") 
 source("./R/ipmFunctions.R")
@@ -16,15 +17,41 @@ source("./R/ipmFunctions.R")
 library(grid)
 
 # Upload dataframe of modified vital rates
-parDFup <- read.csv("./data/parDFup.csv")
-head(parDFup)
+params <- paramsOptim
+
+data_out <- params
+rownames(data_out) <- "baseline"
+
+paramVec <- names(params)
+paramVec[1]
+N <- length(paramVec)
+
+counter = 1
+i = 1
+
+for(i in 1:N) {
+  # Select parameter
+  param.i <- paramVec[i]
+  # Create new params df that is row-labeled with selected parameter
+  paramDF.i <- params 
+  rownames(paramDF.i) <- param.i
+  # Choose the column with the parameter to be adjusted
+  column.i <- which(colnames(paramDF.i) %in% param.i)
+  # Increase the column's value by 10 %
+  paramDF.i[1, column.i] <- paramDF.i[1, column.i] * 1.1
+  # Bind the original dataframe with the new, adjusted dataframe
+  data_out <- rbind(data_out, paramDF.i)
+}
+
+data_out
 
 ##### MODIFYING THE IPM #####
 ###1.4.4 Make a kernel###
 min.size <- 0.02
 max.size <- 1.52
+binSize <- 0.02
 
-n <- 100 # number of cells in the matrix
+n <- (max.size - min.size)/binSize # number of cells in the matrix
 b <- min.size+c(0:n)*(max.size-min.size)/n # boundary points (edges of cells defining the matrix)
 b
 y <- 0.5*(b[1:n]+b[2:(n+1)]) # mesh points (i.e., midpoints to be used in numerical integration)
@@ -33,9 +60,9 @@ h <- y[2]-y[1] # step size (i.e., width of cells)
 h
 
 ##### SET UP THE FOR LOOP #####
-loopDat <- parDFup
+loopDat <- data_out
 # choose specific rows
-AllReps <- unique(loopDat$X)
+AllReps <- unique(rownames(loopDat))
 N <- length(AllReps); N
 
 # Set up a matrix for output data 
@@ -84,11 +111,10 @@ for(g in 1:N){
   meanSize <- sum(y*stable.dist)
 # population matrix with continuous variables
   mat1[g,] <- c(lam, maxSize95, maxSize99, meanSize)
+  
 }
 
-mat1
-mat2 <- cbind(loopDat[1], mat1)
-mat2
+mat2 <- cbind(AllReps, data.frame(mat1)) %>% rename(param = AllReps)
 
 ##### PREPARE OUTPUT FOR PLOTTING #####
 mat2$deltaLambda <- mat2$lambda - mat2$lambda[1]
@@ -101,36 +127,22 @@ mat2$per95 <- with(mat2, 100 * delta95/mat2$maxSize95[1])
 mat2$per99 <- with(mat2, 100 * delta99/mat2$maxSize99[1])
 mat2$perMean <- with(mat2, 100 * deltaMean/mat2$meanSize[1])
 
-fullDat <- mat2
+fullDat <- mat2 %>%
+  filter(param != "recruit.size.sd" & param != "mature.size" &
+           param != "growth.sd" & param != "estab.prob.sd" & 
+           param != "embryo.sd" & param != "baseline") %>% 
+  droplevels()
 
-# go from wide to long so that i can use facets
-# facets - absolute vs percent change; X
-names(fullDat)[1] <- "param"
-
-library(reshape2)
-datLong <- melt(fullDat, id.vars = c("param"))
-
-datLong$output <- c(rep("IPM", 48), rep("absolute change", 48), 
-                    rep("percent change", 48))
-
-### Select the data I want to plot
-ggDat <- droplevels(datLong[datLong$output == "percent change" &
-				datLong$variable == "perLambda" |
-				datLong$variable == "per99" |
-				datLong$variable == "perMean", ])
-
-ggDat2 <- droplevels(ggDat[ggDat$param != "Baseline" &
-				ggDat$param != "Survival_IS" &
-				ggDat$param != "Embryo_IS" &
-				ggDat$param != "Growth_IS" , ])
-
-ggDat3 <- ggDat2
+# Want to plot percentage change, facetted by lambda, mean size, and max size
+plotDat <- fullDat %>% select(param, perLambda, per99, perMean) %>% 
+  gather(key = variable, value = value, perLambda:perMean) 
 
 # rename levels of variable
-ggDat3$variable <- c(rep("Lambda", 8), rep("Maximum size", 8), rep("Mean size", 8))
+length_per_variable <- dim(fullDat)[1]
 
-# Rename data for plotting
-plotDat <- ggDat3
+plotDat$variable <- c(rep("Lambda", length_per_variable), 
+                     rep("Maximum size", length_per_variable), 
+                     rep("Mean size", length_per_variable))
 
 ### Plotting details
 
@@ -138,14 +150,21 @@ theme_set(theme_classic(base_size = 12))
 dodge <- position_dodge(width = 0)
 ULClabel <- theme(plot.title = element_text(hjust = -0.15, vjust = 1, size = rel(1.2)))
 
+unique(plotDat$param)
+
 # Change order of values
 paramOrder <- c("Embryo_intercept", "Embryo_slope", "EstabProb", "RecruitSize", 
                 "Survival_intercept", "Survival_slope", "Growth_intercept", "Growth_slope")
 
+paramOrder <- c("embryo.int", "embryo.slope", "estab.prob.mean", 
+                "recruit.size.mean", "surv.int", "surv.slope", 
+                "growth.int", "growth.slope")
+
 # Change labels
 paramLabels <- c("Fecundity\n(intercept)", "Fecundity\n(slope)", 
-                 "Recruitment\nprobability", "Recruit size", "Survival\n(intercept)", 
-                 "Survival\n(slope)", "Growth\n(intercept)", "Growth\n(slope)")
+                 "Recruitment\nprobability", "Recruit size", 
+                 "Survival\n(intercept)", "Survival\n(slope)", 
+                 "Growth\n(intercept)", "Growth\n(slope)")
 
 unique(plotDat$variable)
 
@@ -159,7 +178,7 @@ plotDat$variable <- with(plotDat, factor(variable, levels(variable)[c(1, 3, 2)])
 
 ULClabel <- theme(plot.title = element_text(hjust = -0.25, vjust = 1, size = rel(1.2)))
 
-sensitivityPlot <- ggplot(plotDat, aes(param, value)) +
+ggplot(plotDat, aes(param, value)) +
   geom_bar(stat = "identity", color = "black", fill = "darkgray") +
   geom_hline(yintercept = c(0, 10), color = "gray", linetype = "dashed") + 
   # geom_hline(yintercept = 10, lty = 2, color = "darkgray") + 
@@ -173,8 +192,6 @@ sensitivityPlot <- ggplot(plotDat, aes(param, value)) +
   facet_wrap(~ variable) + coord_flip() + 
   # labs(title = "A") + ULClabel + 
   theme(panel.margin = unit(1.5, "lines"))
-
-sensitivityPlot
 
 ggsave(file = "./figs/ipm_sensitivity.pdf", height = 3.5, width = 7)
 

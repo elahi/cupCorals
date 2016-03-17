@@ -79,10 +79,11 @@ source("R/get_estab_prob.R")
 
 fecCA <- get_fecundity_params(E = 0.65, k, kelvin = kelvin_CA)
 fecWA <- get_fecundity_params(E = 0.65, k, kelvin = kelvin_WA)
-fecOptim <- get_fecundity_params(E = 0.65, k, kelvin = kelvin_WA)
+fecOptim <- get_fecundity_params(E = 0.655, k, kelvin = kelvin_WA)
 
 paramsCA <- params
 paramsWA <- params
+paramsOptim <- params
 
 paramsCA$estab.prob.mean <- fecCA$estab.prob.mean
 paramsCA$estab.prob.sd <- fecCA$estab.prob.sd
@@ -94,7 +95,13 @@ paramsWA$estab.prob.sd <- fecWA$estab.prob.sd
 paramsWA$mature.size <- fecWA$mature.size
 paramsWA$embryo.int <- fecWA$embryo.int
 
+paramsOptim$estab.prob.mean <- fecOptim$estab.prob.mean
+paramsOptim$estab.prob.sd <- fecOptim$estab.prob.sd
+paramsOptim$mature.size <- fecOptim$mature.size
+paramsOptim$embryo.int <- fecOptim$embryo.int
+
 
 ##### COMPLETE DATAFRAME #####
 paramsCA
 paramsWA
+paramsOptim
