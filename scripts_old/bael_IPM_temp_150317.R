@@ -198,7 +198,7 @@ ULClabel <- theme(plot.title = element_text(hjust = -0.07, vjust = 1,
 theme_set(theme_classic(base_size = 12))
 
 # Max size plot
-max99Plot <- ggplot(data = simDat, aes((Kelvin-273.15), maxSize99, linetype = Ea)) +
+maxSizePlot <- ggplot(data = simDat, aes((Kelvin-273.15), maxSize99, linetype = Ea)) +
   xlab(tempLab) + ylab(label1) +
   geom_point(alpha = 0.5, size = 0, color = "white") + 
   geom_smooth(se = FALSE, size = 0.7, color = "black") + 
@@ -210,27 +210,14 @@ max99Plot <- ggplot(data = simDat, aes((Kelvin-273.15), maxSize99, linetype = Ea
   guides(linetype = guide_legend(reverse=TRUE)) + 
   # guides(color = guide_legend(reverse=TRUE)) + 
   coord_cartesian(ylim = c(0.9, 1.7)) 
-
-max95Plot <- ggplot(data = simDat, aes((Kelvin-273.15), maxSize95, linetype = Ea)) +
-  xlab(tempLab) + ylab(label1) +
-  geom_point(alpha = 0.5, size = 0, color = "white") + 
-  geom_smooth(se = FALSE, size = 0.7, color = "black") + 
-  theme(legend.justification = "center", legend.position = c(0.9, 0.7)) +
-  theme(legend.text = element_text(size = 10)) + 
-  theme(legend.title = element_text(size = 10)) + 
-  scale_linetype_discrete(name = "Activation\nenergy") + 
-  # scale_colour_grey(start = 0.8, end = 0.2) + 
-  guides(linetype = guide_legend(reverse=TRUE)) + 
-  # guides(color = guide_legend(reverse=TRUE)) + 
-  coord_cartesian(ylim = c(0.5, 1.7)) 
-max95Plot
-
+maxSizePlot
 
 ##### OBSERVED MAXIMUM SIZE: PRESENT #####
-# Size frequencies in 2007 + 2010
+# Present: max of corals in 2007 or 2010
 source("R/get_histo_ipm_data.R")
+quantile(hist0710$area, c(1,0.95, 0.99))
 
-sizeSummary_modern <- hist0710 %>%
+sizeSummary_mod <- hist0710 %>%
   summarise(maxSize = max(area), 
             max99 = quantile(area, 0.99), 
             max95 = quantile(area, 0.95),
@@ -238,11 +225,13 @@ sizeSummary_modern <- hist0710 %>%
             n = length(area))
 
 ##### OBSERVED MAXIMUM SIZE: PAST #####
-# Size frequences in 1969 + 1972
+# Past: max of corals in 1969 or 1972
 # Past size data in histoData.csv:
 dat <- read.csv("./data/bael_histoData.csv", header=TRUE, na.strings="NA")
+head(dat)
 
 # Initial data
+unique(dat$ini.notes)
 ini.dat <- droplevels(dat[dat$ini.notes != "angle" & dat$ini.notes != "fuzzy" &
                             dat$ini.notes != "gone" & dat$ini.notes != "nv" &
                             dat$ini.notes != "tentacles", ])
@@ -250,19 +239,36 @@ ini.dat <- droplevels(dat[dat$ini.notes != "angle" & dat$ini.notes != "fuzzy" &
 ini.dat <- droplevels(ini.dat[complete.cases(ini.dat$ini.area), ]) # drop NAs
 
 # Final data
+unique(dat$fin.notes)
 fin.dat <- droplevels(dat[dat$fin.notes != "angle" & dat$fin.notes != "fuzzy" &
                             dat$fin.notes != "gone" & dat$fin.notes != "nv" &
-                            dat$fin.notes != "tentacles" & 
-                            dat$fin.notes != "algae" &
-                            dat$fin.notes != "dead" & 
-                            dat$fin.notes != "overgrown", ])
+                            dat$fin.notes != "tentacles" & dat$fin.notes != "algae" &
+                            dat$fin.notes != "dead" & dat$fin.notes != "overgrown", ])
 
 fin.dat <- droplevels(fin.dat[complete.cases(fin.dat$fin.area), ]) # drop NAs
+unique(fin.dat$fin.notes)
 
-ini.sc <- subset(ini.dat, site=="SC")
+ini.sc<- subset(ini.dat, site=="SC")
 fin.sc <- subset(fin.dat, site == "SC")
 
-# Combine past and present SC data 
+ini.sc$tempC <- with(ini.sc, ifelse(time == "past", hisTemp-273.15, modTemp-273.15))
+fin.sc$tempC <- with(fin.sc, ifelse(time == "past", hisTemp-273.15, modTemp-273.15))
+
+# Initial data
+ggplot(ini.sc, aes(tempC, ini.area)) +
+  geom_violin(alpha = I(0.5), aes(color = time), 
+              position = position_jitter(width = 0.01)) 
+
+# Final data
+ggplot(fin.sc, aes(tempC, fin.area)) +
+  geom_violin(alpha = I(0.5), aes(color = time), 
+              position = position_jitter(width = 0.01)) 
+summary(ini.sc)
+
+# All data together
+names(ini.sc)
+names(fin.sc)
+
 iniDF <- ini.sc %>% select(time, ini.area) %>% rename(area = ini.area)
 finDF <- fin.sc %>% select(time, fin.area) %>% rename(area = fin.area)
 histDF <- rbind(iniDF, finDF)
@@ -271,27 +277,55 @@ histDF %>% group_by(time) %>%
   summarise(maxSize = max(area), 
             max99 = quantile(area, 0.99), 
             max95 = quantile(area, 0.95), 
-            median = median(area), 
             n = length(area))
 
-sizeSummary_historic <- histDF %>% filter(time == "past") %>%
-  summarise(maxSize = max(area), 
-            max99 = quantile(area, 0.99), 
-            max95 = quantile(area, 0.95), 
-            median = median(area), 
-            n = length(area))
+quantile(hist0710$area, c(1,0.99, 0.95))
 
-sizeObs <- rbind(sizeSummary_modern, sizeSummary_historic)
-sizeObs$tempC <- c(modTemp-273.15, hisTemp-273.15)
-sizeObs$era <- c("present", "past")
+
+
+initialSize <- ini.sc %>% group_by(time) %>%
+  summarise(maxSize = max(ini.area), 
+            max99 = quantile(ini.area, 0.99), 
+            max95 = quantile(ini.area, 0.95))
+initialSize
+
+finalSize <- fin.sc %>% group_by(time) %>%
+  summarise(maxSize = max(fin.area), 
+            max99 = quantile(fin.area, 0.99), 
+            max95 = quantile(fin.area, 0.95))
+
+
+
+initialSize
+finalSize
+
+
+
+sizeObs <- initialSize
+sizeObs$tempC <- c(hisTemp-273.15, modTemp-273.15)
+
+# substitute max size from largest observed size (to match past data)
+range(hist0710$area)
+quantile(hist0710$area, c(0.95, 0.99))
+
+present_hist0710 <- data.frame(time = "present0710", 
+                                  maxSize = max(hist0710$area), 
+                                  max99 = quantile(hist0710$area, 0.99), 
+                                  max95 = quantile(hist0710$area, 0.95), 
+                                  tempC = 9.25)
+present_hist0710
 sizeObs
 
+sizeObs <- rbind(sizeObs, present_hist0710)
+sizeObs
 ##### GET PREDICTED MAX SIZES  #####
-# Predicted modern size (empirical growth functions)
+# Empirical historical and modern growth and survival functions 
+
+# Predicted modern size (empirical growth and survival functions)
 
 # what is the predicted size at the modern temp?
 modTemp
-maxSizeModPred <- simDat[simDat$Kelvin == 282.40 &
+maxSizeModPred <- simDat[simDat$Kelvin == modTemp &
                              simDat$Ea == 0.6, ]$maxSize99
 maxSizeModPred
 
@@ -307,7 +341,7 @@ res1$max99
 # full growth curve (historic data)
 res2$max99
 
-# use truncated growth curve
+# use full growth curve
 maxSizeHistPred <- res1$max99
 
 # Create data frame with predicted size at modern temp (above)
@@ -323,34 +357,47 @@ maxSizePred <- data.frame(
 maxSizePred
 
 ##### FINAL PLOTS  #####
-presentObs <- sizeObs %>% filter(era == "present")
-pastObs <- sizeObs %>% filter(era == "past")
+# observed points
+sizeObs <- sizeObs %>% filter(time != "present")
+maxObs <- geom_point(aes(tempC, max99, linetype = NULL), 
+                     data = sizeObs,
+                     size = 3, shape = 15, color = c("darkgray", 1)) 
 
-# Upper edge is max size, lower edge is 99%ile size
-rectPresent <- annotate("rect", 
-                    xmin = (as.numeric(sc_meanTemp_pres) - 0.02), 
-                    xmax = (as.numeric(sc_meanTemp_pres) + 0.02), 
-                    ymin = presentObs$max99, 
-                    ymax = presentObs$maxSize,
-                    alpha = .2, fill = "black") 
+maxObs2 <- geom_point(aes(tempC, max99, linetype = NULL), 
+                     data = sizeObs,
+                     size = 1, shape = 15, color = "white") 
 
-rectPast <- annotate("rect", 
-           xmin = (as.numeric(sc_meanTemp_past) - 0.02), 
-           xmax = (as.numeric(sc_meanTemp_past) + 0.02), 
-           ymin = pastObs$max99, 
-           ymax = pastObs$maxSize,
-           alpha = .2, fill = "black")
+# predicted points 
+pPred <- geom_point(aes(tempC, size, linetype = NULL), 
+                    data = maxSizePred,
+                    size = 3, shape = 17, color = c("darkgray", 1))
 
+pPred2 <- geom_point(aes(tempC, size, linetype = NULL), 
+                    data = maxSizePred,
+                    size = 1, shape = 17, color = "white")
 
-max99Plot + rectPresent + rectPast + 
-  geom_point(aes(tempC, size, linetype = NULL), 
-                      data = maxSizePred,
-                      size = 3, shape = c(23, 21), fill = 1) + 
-  geom_point(aes(tempC, size, linetype = NULL), 
-             data = maxSizePred,
-             size = 1.5, shape = c(23, 21), fill = "darkgray")
+# final plot
+maxSizePlot + maxObs + maxObs2 + pPred + pPred2
 
 ggsave("./figs/ipm_temp.pdf", width = 3.5, height = 3.5)
+
+
+##### PLOT USING 99%ILE OBSERVED SIZE  #####
+
+sizeObs
+library(tidyr)
+
+sizeObsLong <- gather(sizeObs, key = sizeType, value = size_cm, maxSize:max95)
+
+sizeObsLong <- sizeObsLong %>% filter(sizeType == "max99") %>%
+  filter(time != "present")
+sizeObsLong
+
+obsPoints <- geom_point(aes(tempC, size_cm, by = sizeType, linetype = NULL), 
+                    data = sizeObsLong)
+maxSizePred
+
+maxSizePlot + pPred + pPred2 + obsPoints
 
 ### How different are these observed and predicted values?
 sizeObs

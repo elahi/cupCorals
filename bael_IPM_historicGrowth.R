@@ -26,8 +26,8 @@ fixef(pastMod)
 fixef(pastModAll) 
 
 # Create new paramsDF  
-paramsWA_hist <- paramsWA
-paramsWA_histAll <- paramsWA
+paramsWA_hist <- paramsOptim
+paramsWA_histAll <- paramsOptim
 
 # Substitute growth slope from historical data
 paramsWA_hist$growth.slope <- fixef(pastMod)[2] 
@@ -54,7 +54,7 @@ binN <- (max.size - min.size)/binSize
 binN
 
 # Basic IPM, paramsWA
-ipm0 <- bigmatrix(n = binN, params = paramsWA)
+ipm0 <- bigmatrix(n = binN, params = paramsOptim)
 res0 <- popF(ipm0, binSize)
 res0$max99
 

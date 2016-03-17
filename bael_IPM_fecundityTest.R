@@ -12,23 +12,7 @@ rm(list=ls(all=TRUE))
 source("./R/bael_params.R")
 source("./R/ipmFunctions.R")
 source("bael_embryos_Ea.R")
-
-# Data from ipmData.csv:
-dat <- read.csv("./data/bael_ipmData.csv", header=TRUE, na.strings="NA")
-
-# Select the relevant columns
-d <- dat[, which(names(dat) %in% 
-                   c("quad", "date", "date.no", "coral.id", "area", 
-                     "feret", "code", "sizeOK", "surv", "growth", "recruit"))]
-
-dHIST <- droplevels(d[d$code != "angle" & d$code != "algae" &
-                        d$code != "nv" & d$code != "dead", ])
-dHIST <- droplevels(dHIST[complete.cases(dHIST$area), ]) # drop NAs
-
-# include only 2007 and 2010: years for IPM
-hist07 <- droplevels(dHIST[dHIST$date.no == 39426, ])
-hist10 <- droplevels(dHIST[dHIST$date.no == 40515, ])
-hist0710 <- rbind(hist07, hist10)
+source("R/get_histo_ipm_data.R")
 
 ##### MAX AND MIN SIZES #####
 # Will use slightly larger size range for IPM because
@@ -250,26 +234,20 @@ points(ipm_out[[medianEa_position]]$meshpts ,
        res_out[[medianEa_position]]$ssd2, type="l", lty=1, lwd = 2, 
        col = "darkgray")
 
-# arrows(res1$max95, 0.6, res1$max95, 0.3, col = "darkgray", 
-#        length = 0.1, lwd = 1.5, angle = 20)
-
-arrows(res2$max95, 0.4, res2$max95, 0.05, col = "black", 
-       length = 0.1, lwd = 1, angle = 20, lty = 1)		
-arrows(res2$max99, 0.4, res2$max99, 0.05, col = "black", 
+# arrows(res2$max95, 0.4, res2$max95, 0.05, col = "black", 
+#        length = 0.1, lwd = 1, angle = 20, lty = 1)		
+arrows(res2$max99, 0.4, res2$max99, 0.13, col = "black", 
          length = 0.1, lwd = 1, angle = 20, lty = 1)
 
-arrows(res_out[[medianEa_position]]$max95, 0.4, 
-         res_out[[medianEa_position]]$max95, 0.05, col = "darkgray", 
-         length = 0.1, lwd = 1, angle = 20, lty = 1)	
+# arrows(res_out[[medianEa_position]]$max95, 0.4, 
+#          res_out[[medianEa_position]]$max95, 0.05, col = "darkgray", 
+#          length = 0.1, lwd = 1, angle = 20, lty = 1)	
 
 arrows(res_out[[medianEa_position]]$max99, 0.4, 
-         res_out[[medianEa_position]]$max99, 0.05, col = "darkgray", 
+         res_out[[medianEa_position]]$max99, 0.13, col = "darkgray", 
          length = 0.1, lwd = 1, angle = 20, lty = 1)	
 
-points(obs99, 0, pch = 21, col = "darkgray", lwd = 2)
-
-res_out[[medianEa_position]]$max99
-res_out[[medianEa_position]]$max95
+# points(obs99, 0, pch = 21, col = "darkgray", lwd = 2)
 
 add_panel_label(ltype = "b")
 

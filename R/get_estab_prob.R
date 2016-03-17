@@ -20,8 +20,12 @@ E <- 0.65 #activation energy for development rate = 0.65. E for PLD (1/dev) = -0
 # Store the coefficient A from arrhenius equation for the y intercept of the embryo-size regression
 embryo_A <- aCoef(yIntCA, E, k, temp = kelvin_CA, dir = "neg")
 
-# Load the ipm data - need this for estimating recruitment probability
+# Load the histo ipm data - need this for estimating recruitment probability
+# Select the relevant columns
 dat <- read.csv("./data/bael_ipmData.csv", header=TRUE, na.strings="NA")
+
+quad_densDF <- dat %>% filter(date.no == 39426) %>% group_by(quad) %>%
+  summarise(n = length(area))
 
 get_fecundity_params <- function(E, k, kelvin) {
   
@@ -55,9 +59,6 @@ get_fecundity_params <- function(E, k, kelvin) {
                               quadEmbryos == 0, 0, 
                             ifelse(quadRecruits > quadEmbryos, 
                                    NA, quadRecruits/quadEmbryos)))
-
-  # quad_DF <- inner_join(quad_recruitsDF, quad_embryosDF, by = "quad") %>% 
-  #   mutate(recProb = quadRecruits/quadEmbryos)
   
   quad_DF$recProb[is.infinite(quad_DF$recProb)] <- NA
   
@@ -74,4 +75,5 @@ get_fecundity_params <- function(E, k, kelvin) {
   return(estabDF)
 
 }
+
 
