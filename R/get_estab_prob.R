@@ -9,7 +9,7 @@
 ##' k = Boltzmann's constant
 ##' kelvin = desired temperature
 
-source("bael_embryos.R")
+# source("bael_embryos.R")
 
 # California derived parameters (from embryos script)
 xIntCA; yIntCA; slopeCA
@@ -45,11 +45,11 @@ get_fecundity_params <- function(E, k, kelvin) {
     group_by(quad) %>%
     summarise(quadEmbryos = sum(embryos, na.rm = TRUE))
   
-  minEmbryos <- quad_embryosDF %>% filter(quadEmbryos > 0) %>% 
-    summarise(min = min(quadEmbryos, na.rm = TRUE)) %>% as.numeric()
-  
-  # Add the minimum number of embryos as background embryos (e.g., from other plots)
-  quad_embryosDF$quadEmbryos <- quad_embryosDF$quadEmbryos + minEmbryos
+  # minEmbryos <- quad_embryosDF %>% filter(quadEmbryos > 0) %>% 
+  #   summarise(min = min(quadEmbryos, na.rm = TRUE)) %>% as.numeric()
+  # 
+  # # Add the minimum number of embryos as background embryos (e.g., from other plots)
+  # quad_embryosDF$quadEmbryos <- quad_embryosDF$quadEmbryos + minEmbryos
   
   # These are the observed recruits every year
   recruitDat <- dat %>% filter(recruit ==1) %>% select(coral.id, code) %>%
@@ -63,15 +63,11 @@ get_fecundity_params <- function(E, k, kelvin) {
   # Join embryos with recruits, then calculate establishment probability
   quad_DF <- inner_join(quad_recruitsDF, quad_embryosDF, by = "quad") 
 
-  # quad_DF <- quad_DF %>% mutate(recProb = quadRecruits/quadEmbryos)
-  
-  # quad_DF <- quad_DF %>%
-  #   mutate(recProb = ifelse(quadRecruits == 0 &
-  #                             quadEmbryos == 0, 0,
-  #                           ifelse(quadRecruits > quadEmbryos,
-  #                                  NA, quadRecruits/quadEmbryos)))
-  
-  quad_DF <- quad_DF %>% mutate(recProb = quadRecruits/quadEmbryos)
+  quad_DF <- quad_DF %>%
+    mutate(recProb = ifelse(quadRecruits == 0 &
+                              quadEmbryos == 0, 0,
+                            ifelse(quadRecruits > quadEmbryos,
+                                   NA, quadRecruits/quadEmbryos)))
   
   quad_DF$recProb[is.infinite(quad_DF$recProb)] <- NA
   
@@ -89,4 +85,4 @@ get_fecundity_params <- function(E, k, kelvin) {
 
 }
 
-get_fecundity_params(E = 0.66, k, kelvin_WA)
+get_fecundity_params(E = 1.0, k, kelvin_WA)

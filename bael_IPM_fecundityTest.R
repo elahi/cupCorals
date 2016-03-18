@@ -11,7 +11,6 @@ rm(list=ls(all=TRUE))
 ##### LOAD PACKAGES ETC #####
 source("./R/bael_params.R")
 source("./R/ipmFunctions.R")
-source("bael_embryos_Ea.R")
 source("R/get_histo_ipm_data.R")
 
 ##### MAX AND MIN SIZES #####
@@ -140,6 +139,13 @@ ggplot(bothYears, aes(Ea, LogLik)) +
 
 ggsave("figs/fecundityParams_Ea_LogLik_1.pdf",
        height = 3.5, width = 3.5)
+
+bothYears %>% filter(Ea > 0.64) %>%
+  ggplot(., aes(Ea, LogLik)) +
+  geom_point(size = 0.5) + geom_line(color = 'red') +
+  ylab("Log likelihood") + xlab("Activation energy (Ea)") +
+  geom_point(data = logLikLong[logLikLong$Ea == 0.65, ],
+             aes(Ea, LogLik), color = "blue")
 
 ##### MINIMIZE LOG-LIKELIHOOD, SELECT EA #####
 

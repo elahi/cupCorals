@@ -73,8 +73,7 @@ loopLong$parameter <- factor(loopLong$parameter,
 
 ##### PLOT RESULTS #####
 
-ggDat <- loopLong %>% filter(parameter == "estab.prob.mean" & 
-                               Ea < 0.67)
+ggDat <- loopLong 
 
 ggplot(ggDat, aes(Ea, value)) +
   geom_point(size = 0.5) + geom_line(color = 'red') +
