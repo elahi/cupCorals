@@ -160,6 +160,9 @@ medianEa
 llDF %>% ungroup() %>% arrange(LogLik) %>% slice(1:1)
 
 medianEa
+
+# medianEa_position <- which(data_out$Ea == 0.65)
+
 medianEa_position <- which(data_out$Ea == as.numeric(medianEa))
 
 ##### CREATE COLOR RAMP #####
