@@ -6,7 +6,7 @@
 
 ##### LOAD PACKAGES, DATA #####
 source("./bael_embryos.R") # this also loads bael_functions
-source("R/get_estab_prob.R")
+source("R/get_fecundity_params.R")
 library(tidyr)
 
 # California derived parameters (from embryos script)
@@ -33,8 +33,8 @@ loopDat
 for (i in 1:length(vector_Ea)) {
   E.i <- loopDat[i, ]$Ea
   
-  estabDF.i <- get_fecundity_params(E = E.i, 
-                                    k = k, kelvin = kelvin_WA)
+  estabDF.i <- get_fec(E = E.i, k = k, kelvin = kelvin_WA, 
+                       keepZeroes = TRUE, annual = FALSE)
 
   loopDat[i, ]$Ea <- E.i
   loopDat[i, ]$estab.prob.mean <- estabDF.i$estab.prob.mean
@@ -51,14 +51,10 @@ loopDat
 
 ##### CLEAN UP RESULTS #####
 
-# Remove data where mature.size exceeds the observed value
-max(dat$area, na.rm = TRUE)
-head(loopDat)
-tail(loopDat)
+# Remove values with > 1 estab prob
+loopDat2 <- loopDat %>% filter(estab.prob.mean < 1)
 
-# loopDat2 <- loopDat %>% filter(estab.prob.mean > 0)
-
-loopLong <- loopDat %>% gather(key = parameter, value = value, 
+loopLong <- loopDat2 %>% gather(key = parameter, value = value, 
                                 estab.prob.mean:quad.n)
 
 head(loopLong)
@@ -73,7 +69,7 @@ loopLong$parameter <- factor(loopLong$parameter,
 
 ##### PLOT RESULTS #####
 
-ggDat <- loopLong 
+ggDat <- loopLong
 
 ggplot(ggDat, aes(Ea, value)) +
   geom_point(size = 0.5) + geom_line(color = 'red') +

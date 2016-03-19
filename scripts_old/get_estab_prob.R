@@ -8,6 +8,9 @@
 ##' E = desired activation energy
 ##' k = Boltzmann's constant
 ##' kelvin = desired temperature
+##' keepZeroes = TRUE to keep quadrats where embryos = 0
+##' keepZeroes = FALSE to remove quadrats where embryos = 0
+##' (in both cases, when recruits > embryos, then the quadrat is removed)
 
 # source("bael_embryos.R")
 
@@ -28,7 +31,7 @@ dat <- read.csv("./data/bael_ipmData.csv", header=TRUE, na.strings="NA")
 
 kelvin = kelvin_WA
 
-get_fecundity_params <- function(E, k, kelvin) {
+get_fecundity_params <- function(E, k, kelvin, keepZeroes = TRUE) {
   
   ### PART 1: ESTIMATE NEW EMBRYO-SIZE RELATIONSHIP
   # Calculate new y-intercept and x-intercept (size at maturity)
@@ -45,12 +48,6 @@ get_fecundity_params <- function(E, k, kelvin) {
     group_by(quad) %>%
     summarise(quadEmbryos = sum(embryos, na.rm = TRUE))
   
-  # minEmbryos <- quad_embryosDF %>% filter(quadEmbryos > 0) %>% 
-  #   summarise(min = min(quadEmbryos, na.rm = TRUE)) %>% as.numeric()
-  # 
-  # # Add the minimum number of embryos as background embryos (e.g., from other plots)
-  # quad_embryosDF$quadEmbryos <- quad_embryosDF$quadEmbryos + minEmbryos
-  
   # These are the observed recruits every year
   recruitDat <- dat %>% filter(recruit ==1) %>% select(coral.id, code) %>%
     rename(recruitCode = code)
@@ -60,17 +57,22 @@ get_fecundity_params <- function(E, k, kelvin) {
     group_by(quad) %>%
     summarise(quadRecruits = recruitF(recruitCode)) 
   
-  # Join embryos with recruits, then calculate establishment probability
-  quad_DF <- inner_join(quad_recruitsDF, quad_embryosDF, by = "quad") 
-
-  quad_DF <- quad_DF %>%
-    mutate(recProb = ifelse(quadRecruits == 0 &
-                              quadEmbryos == 0, 0,
-                            ifelse(quadRecruits > quadEmbryos,
-                                   NA, quadRecruits/quadEmbryos)))
+  # Join embryos with recruits,  
+  quad_DF <- inner_join(quad_recruitsDF, quad_embryosDF, by = "quad")
   
-  quad_DF$recProb[is.infinite(quad_DF$recProb)] <- NA
+  # Calculate establishment probability
+  ifelse(keepZeroes == TRUE,
+         quad_DF <- quad_DF %>% 
+           mutate(recProb = ifelse(quadRecruits == 0 & quadEmbryos == 0, 0,
+                                   ifelse(quadRecruits > quadEmbryos, NA, 
+                                          quadRecruits/quadEmbryos))), 
+         
+         quad_DF <- quad_DF %>% 
+           mutate(recProb = ifelse(quadRecruits == 0 & quadEmbryos == 0, NA,
+                                   ifelse(quadRecruits > quadEmbryos, NA, 
+                                          quadRecruits/quadEmbryos))))
   
+  # Summarize data
   estabDF <- quad_DF %>% summarise(estab.prob.mean = mean(recProb, na.rm = TRUE), 
                                    estab.prob.sd = sd(recProb, na.rm = TRUE), 
                                    embryos.mean = mean(quadEmbryos, na.rm = TRUE), 
@@ -85,4 +87,4 @@ get_fecundity_params <- function(E, k, kelvin) {
 
 }
 
-get_fecundity_params(E = 1.0, k, kelvin_WA)
+get_fecundity_params(E = 0.65, k, kelvin_WA, keepZeroes = TRUE)

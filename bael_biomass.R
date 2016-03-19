@@ -37,11 +37,11 @@ ols1 <- lm(biomass ~ area, data = dat)
 summary(ols1)
 ols1$coefficients
 
-# predicted biomass for 1.00 cm2, and 1.67 cm2
+# predicted biomass for largest corals 1.00 cm2, and 1.67 cm2
 area_given <- c(1, 1.67)
 
 # predicted biomass for 99% max sizes (0.91, 1.44)
-area_given <- c(0.91, 1.44)
+area_given <- c(0.91, 1.47)
 
 predict_biomass <- function(area) {
   (area * ols1$coefficients[2] + 
@@ -107,7 +107,7 @@ ols1$coefficients
 area_given <- log(c(1, 1.67) * 100)
 
 # predicted biomass for 99% max sizes (0.91, 1.44)
-area_given <- log(c(0.91, 1.44) * 100)
+area_given <- log(c(0.91, 1.47) * 100)
 area_given
 
 predict_biomass <- function(area) {

@@ -8,14 +8,10 @@
 
 # rm(list=ls(all=TRUE)) # removes all previous material from R's memory
 
-##### LOAD PACKAGES, DATA #####
-# source("./R/bael_params.R")
-# source("./R/ipmFunctions.R")
+##### LOAD PACKAGES ETC #####
+source("bael_IPM_fecundityTest.R")
 
 # Create params DF with modified growth function
-# Get growth data
-source("bael_growth.R")
-
 # Summary of modeled parameters
 summary(pastMod)
 summary(pastModAll)
@@ -36,14 +32,11 @@ paramsWA_histAll$growth.slope <- fixef(pastModAll)[2]
 paramsWA_hist$growth.sd <- fixef(pastMod)[1] 
 paramsWA_histAll$growth.sd <- fixef(pastModAll)[1] 
 
+paramsOptim
 paramsWA_hist
 paramsWA_histAll
 
 ##### RUN IPMS #####
-
-min.size <- .9*min(hist0710$area, na.rm=T)
-max.size <- 1.1*max(hist0710$area, na.rm=T)
-
 # Will use larger size range for IPM because
 # it is otherwise artificially truncated
 min.size <- 0.02
@@ -53,15 +46,15 @@ binSize <- 0.02
 binN <- (max.size - min.size)/binSize
 binN
 
-# Basic IPM, paramsWA
+# Basic IPM, paramsOptim
 ipm0 <- bigmatrix(n = binN, params = paramsOptim)
 res0 <- popF(ipm0, binSize)
-res0$max99
+present_max <- res0$max99
 
 # Basic IPM, paramsWA_hist (historical growth slope, truncated)
 ipm1 <- bigmatrix(n = binN, params = paramsWA_hist)
 res1 <- popF(ipm1, binSize)
-res1$max99
+past_max <- res1$max99
 
 # Basic IPM, paramsWA_histAll (historical growth slope, all data)
 ipm2 <- bigmatrix(n = binN, params = paramsWA_histAll)
@@ -71,4 +64,8 @@ res2$max99
 # Check for eviction
 plot(ipm2$meshpts, s.x(ipm1$meshpts, params), xlab = "Size", type = "l", ylab = "Survival probability", lwd = 12) # plot the survival model
 points(ipm2$meshpts, apply(ipm1$P, 2, sum), col = "red", lwd = 3, cex = 0.5, pch = 19) # plot the column sums of the survival/growth matrix
+
+##### CALCULATING PERCENT CHANGES #####
+(past_max - present_max)/present_max
+
 

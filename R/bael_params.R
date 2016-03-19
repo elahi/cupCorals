@@ -72,14 +72,10 @@ source("./bael_embryos_Ea.R")
 params$embryo.slope <- coefficients(mxRegCA)[2]
 params$embryo.sd <- sd(resid(mxRegCA))
 
-
-
 ##### ESTABLISHMENT PROBABILITY #####
-source("R/get_estab_prob.R")
-
-fecCA <- get_fecundity_params(E = 0.65, k, kelvin = kelvin_CA)
-fecWA <- get_fecundity_params(E = 0.65, k, kelvin = kelvin_WA)
-fecOptim <- get_fecundity_params(E = 0.655, k, kelvin = kelvin_WA)
+fecCA <- get_fec(E = 0.65, k, kelvin = kelvin_CA, annual = FALSE)
+fecWA <- get_fec(E = 0.65, k, kelvin = kelvin_WA, annual = FALSE)
+fecOptim <- get_fec(E = 0.655, k, kelvin = kelvin_WA, annual = FALSE)
 
 paramsCA <- params
 paramsWA <- params
