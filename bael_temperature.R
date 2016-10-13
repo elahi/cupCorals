@@ -16,7 +16,11 @@
 ##### LOAD PACKAGES, DATA #####
 library(dplyr)
 library(ggplot2)
-theme_set(theme_classic(base_size=12))
+#theme_set(theme_classic(base_size=12))
+
+theme_set(theme_classic(base_size = 12) + 
+            theme(axis.line.x = element_line(colour = 'black', size=0.5, linetype='solid'),
+                  axis.line.y = element_line(colour = 'black', size=0.5, linetype='solid')))
 
 source("./R/multiplotF.R")
 
@@ -81,19 +85,29 @@ tail(rr)
 
 ### Use daily temperatures
 summary(rr)
+
+##' The last census dates:
+##' past = January 1972 
+##' present = December 2010
+##' I want temperatures for a 10 year period prior to the last census date, so
+##' past = 1971
+##' present = 2010
+
 # calculate average temps for estimated temperatures at Shady Cove
-pastSC <- rr %>% filter(year > 1962 & year < 1972)
-presSC <- rr %>% filter(year > 2002 & year < 2010)
-  
+pastSC <- rr %>% filter(year > 1961 & year < 1972)
+presSC <- rr %>% filter(year > 2000 & year < 2011)
+
 pastSC %>% summarise(meanTemp = mean(tempSC, na.rm = TRUE), 
             sdTemp = sd(tempSC, na.rm = TRUE))
 
 presSC %>% summarise(meanTemp = mean(tempSC, na.rm = TRUE), 
             sdTemp = sd(tempSC, na.rm = TRUE))
 
-pastSC$era <- "1962-1972"
-presSC$era <- "2000-2010"
+pastSC$era <- "1962-1971"
+presSC$era <- "2001-2010"
 longSC <- rbind(pastSC, presSC)
+
+longSC %>% distinct(era, year)
 
 plot_temp_boxplot <- ggplot(data = longSC, aes(era, tempSC)) +
   geom_violin(fill = "gray") + 
@@ -162,12 +176,12 @@ ULClabel <- theme(plot.title = element_text(hjust = -0.1, vjust = 1,
                                             size = rel(1.2)))
 
 ### Annual temperatures - time-series
-plot_temp_annual <- sc_yearly %>% filter(year > 1962 & year < 2010) %>%
+plot_temp_annual <- sc_yearly %>% filter(year > 1961 & year < 2011) %>%
   ggplot(data = ., aes(year, tempC)) + 
   geom_point() + geom_smooth(color = "black") + 
   ylab(expression(paste("Annual temperature (", degree, "C)"))) + 
   xlab("") + 
-  ULClabel + labs(title = "A")
+  ULClabel + labs(title = "A") 
   
 ### Daily temperatures - era comparison
 plot_temp_daily <- ggplot(data = longSC, aes(era, tempSC)) +
