@@ -6,7 +6,7 @@
 # downstream effects on size at maturity, establishment probability)
 #################################################
 
-rm(list=ls(all=TRUE)) 
+#rm(list=ls(all=TRUE)) 
 
 ##### LOAD PACKAGES ETC #####
 source("./R/bael_params.R")

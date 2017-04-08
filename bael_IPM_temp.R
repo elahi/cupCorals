@@ -5,7 +5,7 @@
 # Figure 5
 #################################################
 
-rm(list=ls(all=TRUE)) # removes all previous material from R's memory
+#rm(list=ls(all=TRUE)) # removes all previous material from R's memory
 
 ##### LOAD PACKAGES ETC #####
 library(fields) # need for image.plot

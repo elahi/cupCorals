@@ -9,7 +9,7 @@
 # rm(list=ls(all=TRUE)) # removes all previous material from R's memory
 
 ##### LOAD PACKAGES ETC #####
-source("bael_IPM_fecundityTest.R")
+#source("bael_IPM_fecundityTest.R")
 
 # Create params DF with modified growth function
 # Summary of modeled parameters
