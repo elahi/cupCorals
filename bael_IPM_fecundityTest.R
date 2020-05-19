@@ -148,3 +148,4 @@ medianEa
 llDF %>% ungroup() %>% arrange(LogLik) %>% slice(1:1)
 
 medianEa_position <- which(data_out$Ea == as.numeric(medianEa))
+
